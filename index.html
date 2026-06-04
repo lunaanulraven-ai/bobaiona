@@ -134,6 +134,18 @@ footer{text-align:center;padding:28px 0 50px;font-size:.78rem;opacity:.45}
 #musicPlayer button#musicToggle:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offset:2px}
 #musicLabel{font-family:'Caveat',cursive;font-size:1rem;color:var(--cream);opacity:.88;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #ytHolder{position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;pointer-events:none}
+/* Version bar */
+#versionBar{position:sticky;top:0;z-index:990;display:flex;justify-content:center;gap:12px;padding:10px 0;background:rgba(22,12,20,.85);backdrop-filter:blur(8px)}
+.ver-btn{font-family:'Caveat',cursive;font-size:1.2rem;border-radius:40px;background:transparent;color:var(--soft);border:1px solid rgba(232,166,160,.3);padding:6px 18px;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+.ver-btn.active{background:var(--rose);color:#fff;border-color:transparent}
+button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offset:3px}
+/* Theme picker inside editor */
+.editor-section{margin-top:8px}
+.editor-section h4{font-family:'Caveat',cursive;font-size:1.05rem;color:var(--cream);margin-bottom:6px}
+#themePicker{display:flex;flex-wrap:wrap;gap:4px}
+.theme-btn{font-family:'Caveat',cursive;font-size:.95rem;background:var(--blush);color:#fff;border:0;padding:5px 10px;border-radius:20px;cursor:pointer;transition:opacity .2s}
+.theme-btn:hover{opacity:.85}
+.theme-btn.active-theme{outline:2px solid var(--gold);outline-offset:2px}
 </style></head><body>
 <a class="skip-link" href="#main">Pular para o conteúdo</a>
 <div id="bar"></div>
@@ -175,6 +187,11 @@ footer{text-align:center;padding:28px 0 50px;font-size:.78rem;opacity:.45}
       <button id="addPolaroid">Adicionar</button>
     </div>
     <hr />
+    <div class="editor-section">
+      <h4>Escolher clima 🎨</h4>
+      <div id="themePicker"></div>
+    </div>
+    <hr />
     <div style="font-size:.9rem">Dicas: selecione qualquer texto diretamente para editar. Use "Salvar local" e depois "Exportar" para compartilhar.</div>
   </div>
 </div>
@@ -194,6 +211,10 @@ footer{text-align:center;padding:28px 0 50px;font-size:.78rem;opacity:.45}
 </div>
 
 <main id="main" tabindex="-1">
+<div id="versionBar" aria-label="Escolher versão">
+  <button id="btnCaze" class="ver-btn active" data-ver="caze">versão do Cazé 🤍</button>
+  <button id="btnVick" class="ver-btn" data-ver="vick">versão da Vick 🤍</button>
+</div>
 <header class="hero">
   <div class="kicker reveal">a história do bobaião e da bobaiona</div>
   <h1 class="reveal" style="margin-bottom: 32px;">Oi <em>moça</em><br>pfta.</h1>
@@ -677,6 +698,105 @@ addPolaroidBtn.addEventListener('click',()=>{
 saveBtn.addEventListener('click',saveLocal);
 loadBtn.addEventListener('click',loadLocal);
 exportBtn.addEventListener('click',exportJSON);
+
+// ─── Version selector + theme palettes ──────────────────────────────────────
+
+let currentVersion = localStorage.getItem('bobaiona_version') || 'caze';
+
+const VERSION_META = {
+  caze: { label: 'versão do Cazé 🤍', theme: 'padrao' },
+  vick: { label: 'versão da Vick 🤍', theme: 'padrao' }
+};
+
+const THEMES = {
+  padrao:  { name: 'do jeito que é 🌙',      bg:'#160c14', bg2:'#241320', plum:'#37192b', blush:'#e8a6a0', rose:'#d6726f', gold:'#e2b773' },
+  jardim:  { name: 'jardim da madrugada 🌿', bg:'#0b1a14', bg2:'#122219', plum:'#1a3325', blush:'#a8d5b5', rose:'#6dab89', gold:'#c8e090' },
+  aurora:  { name: 'aurora boreal 🌌',       bg:'#0d0a1a', bg2:'#18122b', plum:'#26184a', blush:'#b8a0e8', rose:'#8b6fcf', gold:'#e0c8ff' },
+  mel:     { name: 'tarde de mel 🍯',        bg:'#1a1005', bg2:'#2a1a08', plum:'#3d2610', blush:'#e8c080', rose:'#d4933a', gold:'#f0d880' },
+  bruma:   { name: 'bruma rosada 🌸',        bg:'#1a0e16', bg2:'#2d1a28', plum:'#3f2438', blush:'#f0b8cc', rose:'#e07898', gold:'#f8d0c8' },
+};
+
+function applyTheme(themeKey) {
+  const t = THEMES[themeKey] || THEMES.padrao;
+  const r = document.documentElement.style;
+  r.setProperty('--bg',    t.bg);
+  r.setProperty('--bg2',   t.bg2);
+  r.setProperty('--plum',  t.plum);
+  r.setProperty('--blush', t.blush);
+  r.setProperty('--rose',  t.rose);
+  r.setProperty('--gold',  t.gold);
+  localStorage.setItem('bobaiona_theme_' + currentVersion, themeKey);
+  // update active state on picker buttons
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active-theme', btn.dataset.theme === themeKey);
+  });
+}
+
+function switchVersion(ver) {
+  if (ver === currentVersion) return;
+  // save current main content under current version key
+  const mainEl = document.getElementById('main');
+  localStorage.setItem('bobaiona_content_' + currentVersion, mainEl.innerHTML);
+  currentVersion = ver;
+  localStorage.setItem('bobaiona_version', currentVersion);
+  // load new version content, or seed from current if first visit
+  const saved = localStorage.getItem('bobaiona_content_' + currentVersion);
+  if (saved) {
+    mainEl.innerHTML = saved;
+  }
+  // update active button (buttons may have been replaced by innerHTML swap, so query fresh)
+  _markActiveVersionBtn();
+  // apply this version's theme
+  const savedTheme = localStorage.getItem('bobaiona_theme_' + currentVersion) || VERSION_META[currentVersion].theme;
+  applyTheme(savedTheme);
+  // rebuild theme picker since editor panel innerHTML was untouched (it's outside main)
+  _buildThemePicker();
+}
+
+function _markActiveVersionBtn() {
+  document.querySelectorAll('.ver-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.ver === currentVersion);
+  });
+}
+
+function _buildThemePicker() {
+  const picker = document.getElementById('themePicker');
+  if (!picker) return;
+  picker.innerHTML = '';
+  const savedTheme = localStorage.getItem('bobaiona_theme_' + currentVersion) || VERSION_META[currentVersion].theme;
+  Object.entries(THEMES).forEach(([key, t]) => {
+    const btn = document.createElement('button');
+    btn.className = 'theme-btn' + (key === savedTheme ? ' active-theme' : '');
+    btn.dataset.theme = key;
+    btn.textContent = t.name;
+    btn.addEventListener('click', () => applyTheme(key));
+    picker.appendChild(btn);
+  });
+}
+
+// Wire up version bar buttons (use delegation to survive innerHTML swaps)
+document.getElementById('main').addEventListener('click', (e) => {
+  const btn = e.target.closest('.ver-btn');
+  if (!btn) return;
+  switchVersion(btn.dataset.ver);
+});
+
+// ─── Init: apply saved theme + mark active version ─────────────────────────
+(function initVersionTheme() {
+  _markActiveVersionBtn();
+  const savedTheme = localStorage.getItem('bobaiona_theme_' + currentVersion) || VERSION_META[currentVersion].theme;
+  applyTheme(savedTheme);
+  // Load saved content for current version if it exists
+  const savedContent = localStorage.getItem('bobaiona_content_' + currentVersion);
+  if (savedContent) {
+    const mainEl = document.getElementById('main');
+    mainEl.innerHTML = savedContent;
+    _markActiveVersionBtn();
+    _buildThemePicker();
+  } else {
+    _buildThemePicker();
+  }
+})();
 
 // keyboard shortcut: Ctrl+E to toggle editor
 window.addEventListener('keydown',(e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); toggleEditor(); } });
