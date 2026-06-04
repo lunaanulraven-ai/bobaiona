@@ -154,7 +154,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 #editorPanel select{width:100%;background:rgba(255,255,255,.07);color:var(--cream);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:5px 8px;font-size:.9rem}
 #editorPanel details summary{font-size:.8rem;opacity:.55;cursor:pointer;padding:4px 0}
 #editorPanel details>div{margin-top:6px;display:flex;flex-direction:column;gap:6px}
-#mobileSaveBtn{position:fixed;top:14px;right:14px;z-index:1300;background:var(--rose);color:#fff;border:0;padding:7px 12px;border-radius:20px;font-family:'Caveat',cursive;font-size:1rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);align-items:center;gap:4px;display:none}
+#mobileSaveBtn{position:fixed;bottom:0;left:0;right:0;z-index:1299;height:56px;background:rgba(16,7,14,.95);border-top:1px solid rgba(232,166,160,.2);display:none;flex-direction:row;align-items:center;padding:0 16px;gap:10px}
 /* ─── Block editor ──────────────────────────────────────────────────────── */
 #main.edit-mode [data-block-id]{position:relative;outline:1px dashed rgba(232,166,160,.12);border-radius:6px}
 #main.edit-mode [data-block-id]:hover{outline-color:rgba(232,166,160,.38)}
@@ -202,6 +202,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
   #blkSheet .bs-apply,#blkPanel .bp-apply{padding:14px;font-size:1.2rem;border-radius:12px;margin-top:8px}
   #blkSheet .bs-tab{font-size:1.1rem;padding:10px 0}
   #blkPanel h3{font-family:'Caveat',cursive;font-size:1.3rem;color:var(--gold);margin-bottom:12px}
+  .blk-tb button{font-size:1rem;padding:6px 10px}
 }
 /* Bottom sheet */
 #blkSheet{position:fixed;bottom:0;left:0;right:0;z-index:1350;background:rgba(16,7,14,.97);border-top:1px solid rgba(232,166,160,.22);border-radius:18px 18px 0 0;max-height:85vh;display:none;flex-direction:column;overflow:hidden}
@@ -279,8 +280,8 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
   </div>
 </div>
 
-<!-- Mobile save button (visible only in edit mode on mobile) -->
-<button id="mobileSaveBtn" aria-label="salvar" style="display:none">💾 salvar</button>
+<!-- Mobile edit bar (visible only in edit mode on mobile) -->
+<div id="mobileSaveBtn" style="display:none"></div>
 <!-- Block editor side panel -->
 <div id="blkPanel" aria-hidden="true"></div>
 <!-- Block insert type menu -->
@@ -807,14 +808,27 @@ function toggleEditor(){
       editorPanel.style.display = 'block';
       editorPanel.setAttribute('aria-hidden', 'false');
     }
-    if (msb) msb.style.display = _isMobile() ? 'flex' : 'none';
+    if (msb && _isMobile()) {
+      msb.innerHTML = '';
+      const saveB = document.createElement('button');
+      saveB.textContent = '💾 salvar';
+      saveB.style.cssText = "flex:1;padding:0 16px;height:40px;background:var(--rose);color:#fff;border:0;border-radius:8px;font-family:'Caveat',cursive;font-size:1.1rem;cursor:pointer";
+      saveB.addEventListener('click', saveAll);
+      const exitB = document.createElement('button');
+      exitB.textContent = '✕ sair';
+      exitB.style.cssText = "padding:0 16px;height:40px;background:none;color:var(--cream);border:1px solid rgba(232,166,160,.3);border-radius:8px;font-family:'Caveat',cursive;font-size:1.1rem;cursor:pointer";
+      exitB.addEventListener('click', toggleEditor);
+      msb.appendChild(saveB);
+      msb.appendChild(exitB);
+      msb.style.display = 'flex';
+    }
     main.classList.add('edit-mode');
     _buildMusicSectionSelect();
     _rebuildToolbars();
   } else {
     editorPanel.style.display = 'none';
     editorPanel.setAttribute('aria-hidden', 'true');
-    if (msb) msb.style.display = 'none';
+    if (msb) { msb.style.display = 'none'; msb.innerHTML = ''; }
     main.classList.remove('edit-mode');
     document.querySelectorAll('.blk-tb').forEach(t=>t.remove());
     document.querySelectorAll('[data-block-id]').forEach(el=>{el.removeAttribute('draggable');el.classList.remove('blk-sel');});
@@ -931,7 +945,6 @@ addPolaroidBtn.addEventListener('click',()=>{
 });
 
 saveBtn.addEventListener('click',saveAll);
-document.getElementById('mobileSaveBtn')?.addEventListener('click',saveAll);
 loadBtn.addEventListener('click',loadLocal);
 exportBtn.addEventListener('click',exportJSON);
 
@@ -1417,12 +1430,11 @@ function _rebuildToolbars(){
       const a=ev.target.dataset.a;
       if(a==='up')  _moveBlk(id,-1);
       else if(a==='dn')  _moveBlk(id,1);
-      else if(a==='ed')  _openPanel(id);
+      else if(a==='ed')  _isMobile()?_openSheet(id):_openPanel(id);
       else if(a==='ins') _showInsMenu(id,ev);
       else if(a==='del') _delBlk(id);
     });
     el.appendChild(tb);
-    if(_isMobile()) _attachLongPress(el);
     // Drag-and-drop
     el.draggable=true;
     el.addEventListener('dragstart',ev=>{
@@ -1840,22 +1852,19 @@ async function _uploadMedia(file){
 
 // ── Mobile bottom sheet ────────────────────────────────────────────────────
 const _isMobile=()=>window.innerWidth<=768;
-let _longPressTimer=null;
-
-function _attachLongPress(el){
-  const id=el.dataset.blockId;
-  el.addEventListener('pointerdown',()=>{
-    _longPressTimer=setTimeout(()=>{_openSheet(id);},500);
-  });
-  ['pointerup','pointercancel','pointermove'].forEach(ev=>
-    el.addEventListener(ev,()=>clearTimeout(_longPressTimer)));
-}
 
 function _openSheet(id){
   if(!_isMobile()) return;
   const blk=_bGet(id); if(!blk) return;
   const sheet=document.getElementById('blkSheet');
   sheet.innerHTML=''; sheet.classList.add('open');
+
+  // Botão X — fecha o sheet
+  const xBtn=document.createElement('button');
+  xBtn.textContent='✕'; xBtn.setAttribute('aria-label','fechar');
+  xBtn.style.cssText='position:absolute;top:12px;right:12px;width:44px;height:44px;font-size:1.4rem;background:none;border:0;color:var(--cream);cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10';
+  xBtn.addEventListener('click',_closeSheet);
+  sheet.appendChild(xBtn);
 
   // Alça — arrastar pra baixo fecha
   const handle=document.createElement('div'); handle.className='bs-handle';
@@ -1962,7 +1971,6 @@ function _openSheet(id){
 function _closeSheet(){
   const s=document.getElementById('blkSheet');
   if(s){s.classList.remove('open');s.innerHTML='';}
-  if(_longPressTimer){clearTimeout(_longPressTimer);_longPressTimer=null;}
 }
 
 // keyboard shortcut: Ctrl+E to toggle editor
