@@ -455,8 +455,8 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 <footer>feito à mão, com mídia oculta, muito te amo e zero abridor de vinho • 02/06/2026</footer>
 <script>
 // ─── Config (preencha após criar o projeto no Supabase) ──────────────────────
-const SUPABASE_URL      = '';  // ex: https://xyzxyz.supabase.co
-const SUPABASE_ANON_KEY = '';  // anon/public key do projeto
+const SUPABASE_URL      = 'https://vmkzffuwsndmpkgpxzbz.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Pcq-v4gUzOy_6SdmnkSR2Q_cw3h9kYJ';
 const EDIT_PASSWORD     = 'bobaiona'; // troque por uma senha sua
 
 let _supa = null;
@@ -745,7 +745,7 @@ async function supaLoad(ver) {
 }
 
 async function supaSave(ver, payload) {
-  if (!_supa) return false;
+  if (!_supa) return null;
   try {
     const { error } = await _supa.from('paginas').upsert({ id: ver, conteudo: payload, atualizado_em: new Date().toISOString() });
     return !error;
@@ -760,7 +760,7 @@ async function saveAll() {
   if (status) status.textContent = 'salvando...';
   const ok = await supaSave(currentVersion, payload);
   if (status) {
-    status.textContent = ok ? '☁️ sincronizado!' : '💾 salvo aqui (sem rede)';
+    status.textContent = ok === null ? '💾 salvo aqui (sync desativado)' : ok ? '☁️ sincronizado!' : '⚠️ salvo aqui (sem rede)';
     setTimeout(() => { if(status) status.textContent = ''; }, 3000);
   }
 }
@@ -777,6 +777,7 @@ importFile.addEventListener('change',(e)=>{
 
 addPolaroidBtn.addEventListener('click',()=>{
   const f=polaroidFile.files[0]; const cap=polaroidCap.value||''; if(!f) return alert('Escolha uma imagem');
+  if(f.size > 400*1024) return alert('foto grande demais 😬 — tente uma menor de 400 KB pra não travar o salvamento');
   const r=new FileReader(); r.onload=(ev)=>{
     const url=ev.target.result;
     const g=document.querySelector('.gallery');
@@ -836,7 +837,7 @@ function gatherPhotos() {
   return Array.from(document.querySelectorAll('.polaroid[data-user-added]')).map(div => ({
     src: div.querySelector('img')?.src || '',
     cap: div.querySelector('.cap')?.textContent || ''
-  })).filter(p => p.src);
+  })).filter(p => p.src && !(p.src.startsWith('data:') && p.src.length > 550000));
 }
 
 function applyPhotos(photos) {
@@ -982,7 +983,6 @@ function _extractYtId(url) {
     const entry = { sectionIndex: idx, videoId, start, end, label };
     const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === idx);
     if (pos >= 0) { MUSIC_CONFIG[pos] = entry; } else { MUSIC_CONFIG.push(entry); }
-    localStorage.setItem('bobaiona_music_' + currentVersion, JSON.stringify(MUSIC_CONFIG));
     alert('música salva 🎵 — clique em "salvar tudo" pra sincronizar com o outro aparelho');
   });
 })();
