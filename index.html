@@ -154,6 +154,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 #editorPanel select{width:100%;background:rgba(255,255,255,.07);color:var(--cream);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:5px 8px;font-size:.9rem}
 #editorPanel details summary{font-size:.8rem;opacity:.55;cursor:pointer;padding:4px 0}
 #editorPanel details>div{margin-top:6px;display:flex;flex-direction:column;gap:6px}
+#mobileSaveBtn{position:fixed;top:14px;right:14px;z-index:1300;background:var(--rose);color:#fff;border:0;padding:7px 12px;border-radius:20px;font-family:'Caveat',cursive;font-size:1rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);align-items:center;gap:4px;display:none}
 /* ─── Block editor ──────────────────────────────────────────────────────── */
 #main.edit-mode [data-block-id]{position:relative;outline:1px dashed rgba(232,166,160,.12);border-radius:6px}
 #main.edit-mode [data-block-id]:hover{outline-color:rgba(232,166,160,.38)}
@@ -190,7 +191,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
   #editToggle{padding:0;width:44px;height:44px;border-radius:50%;font-size:0;display:flex;align-items:center;justify-content:center}
   #editToggle::before{content:'✎';font-size:1.1rem}
   #editToggle[aria-pressed="true"]::before{content:'✎'}
-  #editorPanel{right:8px;bottom:58px;width:calc(100vw - 16px);max-width:none}
+  #editorPanel{display:none!important}
   #blkPanel{width:100%;border-left:none;border-top:1px solid rgba(232,166,160,.18);border-radius:18px 18px 0 0;top:auto;padding-top:14px}
   /* toolbar sempre visível em mobile (não depende de hover) */
   #main.edit-mode [data-block-id]>.blk-tb{opacity:1;pointer-events:auto}
@@ -271,6 +272,8 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
   </div>
 </div>
 
+<!-- Mobile save button (visible only in edit mode on mobile) -->
+<button id="mobileSaveBtn" aria-label="salvar" style="display:none">💾 salvar</button>
 <!-- Block editor side panel -->
 <div id="blkPanel" aria-hidden="true"></div>
 <!-- Block insert type menu -->
@@ -790,14 +793,21 @@ function toggleEditor(){
   }
   editMode = !editMode;
   editToggle.setAttribute('aria-pressed', String(editMode));
-  editorPanel.style.display = editMode ? 'block' : 'none';
-  editorPanel.setAttribute('aria-hidden', String(!editMode));
   const main = document.getElementById('main');
+  const msb = document.getElementById('mobileSaveBtn');
   if (editMode) {
+    if (!_isMobile()) {
+      editorPanel.style.display = 'block';
+      editorPanel.setAttribute('aria-hidden', 'false');
+    }
+    if (msb) msb.style.display = _isMobile() ? 'flex' : 'none';
     main.classList.add('edit-mode');
     _buildMusicSectionSelect();
     _rebuildToolbars();
   } else {
+    editorPanel.style.display = 'none';
+    editorPanel.setAttribute('aria-hidden', 'true');
+    if (msb) msb.style.display = 'none';
     main.classList.remove('edit-mode');
     document.querySelectorAll('.blk-tb').forEach(t=>t.remove());
     document.querySelectorAll('[data-block-id]').forEach(el=>{el.removeAttribute('draggable');el.classList.remove('blk-sel');});
@@ -914,6 +924,7 @@ addPolaroidBtn.addEventListener('click',()=>{
 });
 
 saveBtn.addEventListener('click',saveAll);
+document.getElementById('mobileSaveBtn')?.addEventListener('click',saveAll);
 loadBtn.addEventListener('click',loadLocal);
 exportBtn.addEventListener('click',exportJSON);
 
