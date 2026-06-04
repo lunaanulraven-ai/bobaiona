@@ -195,6 +195,13 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
   #blkPanel{width:100%;border-left:none;border-top:1px solid rgba(232,166,160,.18);border-radius:18px 18px 0 0;top:auto;padding-top:14px}
   /* toolbar sempre visível em mobile (não depende de hover) */
   #main.edit-mode [data-block-id]>.blk-tb{opacity:1;pointer-events:auto}
+  /* ── Polish visual mobile ─────────────────────────────────────────────── */
+  #blkSheet .bs-body{padding:16px 18px 36px;display:flex;flex-direction:column;gap:12px}
+  #blkSheet input,#blkSheet textarea,#blkPanel input,#blkPanel textarea{font-family:'Spectral',serif;font-size:1rem;padding:10px 12px;border-radius:10px;margin-bottom:8px}
+  #blkSheet label,#blkPanel label{font-family:'Caveat',cursive;font-size:1rem;opacity:.7;margin-bottom:4px;display:block}
+  #blkSheet .bs-apply,#blkPanel .bp-apply{padding:14px;font-size:1.2rem;border-radius:12px;margin-top:8px}
+  #blkSheet .bs-tab{font-size:1.1rem;padding:10px 0}
+  #blkPanel h3{font-family:'Caveat',cursive;font-size:1.3rem;color:var(--gold);margin-bottom:12px}
 }
 /* Bottom sheet */
 #blkSheet{position:fixed;bottom:0;left:0;right:0;z-index:1350;background:rgba(16,7,14,.97);border-top:1px solid rgba(232,166,160,.22);border-radius:18px 18px 0 0;max-height:85vh;display:none;flex-direction:column;overflow:hidden}
