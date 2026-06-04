@@ -8,7 +8,6 @@
   <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
   <title>Pra minha bobaiona 🤍</title>
   <script src="https://www.youtube.com/iframe_api"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Caveat:wght@500;700&family=Spectral:ital,wght@0,300;0,400;1,400&display=swap' rel='stylesheet'><style>
 :root{
   --bg:#160c14; --bg2:#241320; --plum:#37192b;
@@ -459,10 +458,6 @@ const SUPABASE_URL      = 'https://vmkzffuwsndmpkgpxzbz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_Pcq-v4gUzOy_6SdmnkSR2Q_cw3h9kYJ';
 const EDIT_PASSWORD     = 'bobaiona'; // troque por uma senha sua
 
-let _supa = null;
-if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-  try { _supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
-}
 let _editAuth = false;
 
 // ─── Music config (lido de bobaiona_data_<ver>.music) ───────────────────────
@@ -735,20 +730,38 @@ function exportJSON(){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='bobaiona-export.json'; document.body.appendChild(a); a.click(); a.remove();
 }
 
-// ─── Supabase sync ────────────────────────────────────────────────────────────
+// ─── Supabase sync (fetch nativo — headers explícitos para chave sb_publishable_) ──
+const _SUPA_HEADERS = SUPABASE_URL ? {
+  'apikey':        SUPABASE_ANON_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+  'Content-Type':  'application/json'
+} : null;
+
 async function supaLoad(ver) {
-  if (!_supa) return null;
+  if (!_SUPA_HEADERS) return null;
   try {
-    const { data } = await _supa.from('paginas').select('conteudo').eq('id', ver).single();
-    return data?.conteudo || null;
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/paginas?id=eq.' + ver + '&select=conteudo',
+      { headers: _SUPA_HEADERS }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows[0]?.conteudo || null;
   } catch(e) { return null; }
 }
 
 async function supaSave(ver, payload) {
-  if (!_supa) return null;
+  if (!_SUPA_HEADERS) return null;
   try {
-    const { error } = await _supa.from('paginas').upsert({ id: ver, conteudo: payload, atualizado_em: new Date().toISOString() });
-    return !error;
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/paginas',
+      {
+        method: 'POST',
+        headers: { ..._SUPA_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ id: ver, conteudo: payload, atualizado_em: new Date().toISOString() })
+      }
+    );
+    return res.ok;
   } catch(e) { return false; }
 }
 
