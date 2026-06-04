@@ -238,7 +238,6 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 
 <!-- Editor UI -->
 <button id="editToggle" aria-pressed="false" title="Ativar edição" style="display:none">✎ Editar</button>
-<button id="advEditToggle" aria-pressed="false" title="Editor avançado (Notion-like)" style="display:none">≡ Blocos</button>
 <div id="editorPanel" aria-hidden="true" style="display:none">
   <div class="editor-inner">
     <h3>✏️ editar página</h3>
@@ -273,9 +272,6 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
         <button id="loadBtn">carregar salvo local</button>
         <label for="importFile" class="btn">importar JSON</label>
         <input id="importFile" type="file" accept="application/json" style="display:none" />
-        <input id="polaroidCap" style="display:none" />
-        <input id="polaroidFile" type="file" accept="image/*" style="display:none" />
-        <button id="addPolaroid" style="display:none">adicionar foto</button>
       </div>
     </details>
   </div>
@@ -747,10 +743,6 @@ for(let i=0;i<16;i++){const s=document.createElement('span');s.textContent=['❤
 const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')})},{threshold:.12});
 document.querySelectorAll('.reveal').forEach((el)=>io.observe(el));
 
-function _reobserve() {
-  document.querySelectorAll('.reveal:not(.in)').forEach(el => io.observe(el));
-}
-
 window.addEventListener('scroll',()=>{
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
   const doc = document.documentElement;
@@ -778,21 +770,9 @@ const saveBtn=document.getElementById('saveBtn');
 const loadBtn=document.getElementById('loadBtn');
 const exportBtn=document.getElementById('exportBtn');
 const importFile=document.getElementById('importFile');
-const addPolaroidBtn=document.getElementById('addPolaroid');
-const polaroidFile=document.getElementById('polaroidFile');
-const polaroidCap=document.getElementById('polaroidCap');
 
 let editMode=false;
 const editableSelectors=['.story','.chap-h','.chap-date','.pull','.kicker','.hero h1','.polaroid .cap','.menu li .dish','.menu li .tag','.stat .big','.stat .lab','.sig','.heartbeat'];
-
-function setEditable(on){
-  editableSelectors.forEach(sel=>{
-    document.querySelectorAll(sel).forEach(el=>{
-      el.contentEditable = on ? 'true' : 'false';
-      if(on) el.classList.add('editable-outline'); else el.classList.remove('editable-outline');
-    });
-  });
-}
 
 function toggleEditor(){
   if (!editMode && !_editAuth) {
@@ -940,21 +920,6 @@ importFile.addEventListener('change',(e)=>{
       if(confirm('Importar conteúdo?')){ applyEditable(obj.texts); applyPhotos(obj.photos); if(obj.music) MUSIC_CONFIG=obj.music; if(obj.theme) applyTheme(obj.theme); _buildThemePicker(); }
     }catch(err){ alert('Arquivo inválido'); }
   }; r.readAsText(f);
-});
-
-addPolaroidBtn.addEventListener('click',()=>{
-  const f=polaroidFile.files[0]; const cap=polaroidCap.value||''; if(!f) return alert('Escolha uma imagem');
-  const r=new FileReader(); r.onload=(ev)=>{
-    const url=ev.target.result;
-    const g=document.querySelector('.gallery');
-    if(!g) return alert('Galeria não encontrada');
-    const div=document.createElement('div'); div.className='polaroid reveal'; div.dataset.userAdded='1';
-    const img=document.createElement('img'); img.src=url; img.alt=cap||'Polaroid'; img.loading='lazy';
-    const c=document.createElement('div'); c.className='cap'; c.textContent=cap;
-    div.appendChild(img); div.appendChild(c); g.appendChild(div); io.observe(div);
-    polaroidFile.value=''; polaroidCap.value='';
-    alert('Polaroid adicionada (salve para persistir)');
-  }; r.readAsDataURL(f);
 });
 
 saveBtn.addEventListener('click',saveAll);
