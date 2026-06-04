@@ -582,24 +582,16 @@ function unlockAndPlay() {
     if (sections.length) {
       const sectionObs = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
           const idx = sections.indexOf(entry.target);
           if (idx === -1) return;
-          if (entry.isIntersecting) {
-            _userPaused = false;
+          const track = MUSIC_CONFIG.find(t => t.sectionIndex === idx);
+          if (!track) return;
+          // seção com track entrou: fade out do atual (se houver) depois toca novo
+          if (_lastCfg && !_userPaused) {
+            _fadeOut(800, () => { _userPaused = false; playTrackForSection(idx); });
+          } else if (!_userPaused) {
             playTrackForSection(idx);
-          } else if (idx === _lastSectionIdx && _lastCfg && !_userPaused) {
-            // seção dona da track atual saiu — fade out e pausa
-            const capturedIdx = idx;
-            _fadeOut(1000, () => {
-              if (_lastSectionIdx !== capturedIdx) return; // nova seção já assumiu
-              if (ytPlayer && ytReady) ytPlayer.pauseVideo();
-              const mp = document.getElementById('musicPlayer');
-              if (mp) mp.style.display = 'none';
-              _lastCfg = null;
-              _lastSectionIdx = -1;
-              const btn = document.getElementById('musicToggle');
-              if (btn) { btn.textContent = '▶'; btn.setAttribute('aria-label', 'tocar música'); }
-            });
           }
         });
       }, { threshold: 0.4 });
