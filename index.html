@@ -1112,119 +1112,113 @@ function _extractYtId(url) {
 // ─── Block system ────────────────────────────────────────────────────────────
 let _blocks = [];
 
-function _esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Migra formato plano (Fase 1/2) para árvore (Fase 3+)
+function _migrateFlat(blocks){
+  if(!blocks?.length) return blocks;
+  if(blocks.some(b=>b.type==='chapter'&&b.children!==undefined)) return blocks;
+  const result=[]; let cur=null;
+  for(const b of blocks){
+    if(b.type==='hero'||b.type==='finale'){result.push({...b});cur=null;}
+    else if(b.type==='chapter'){cur={...b,children:[]};result.push(cur);}
+    else if(cur) cur.children.push({...b});
+  }
+  return result;
 }
 
-function parsePageToBlocks() {
-  const blk = []; let n = 0;
-  const uid = (t) => t + '-' + (++n);
-  const main = document.getElementById('main');
+function parsePageToBlocks(){
+  const blk=[]; let n=0;
+  const uid=t=>t+'-'+(++n);
+  const main=document.getElementById('main');
 
-  const hero = main.querySelector('header.hero');
-  if (hero) blk.push({ id: uid('hero'), type: 'hero', data: {
-    kicker:   hero.querySelector('.kicker')?.innerHTML || '',
-    h1:       hero.querySelector('h1')?.innerHTML || '',
-    sub:      hero.querySelector('.sub')?.innerHTML || '',
-    photoSrc: hero.querySelector('.hero-photo img')?.getAttribute('src') || '',
-    photoCap: hero.querySelector('.hero-photo .cap')?.innerHTML || ''
+  const hero=main.querySelector('header.hero');
+  if(hero) blk.push({id:uid('hero'),type:'hero',data:{
+    kicker:   hero.querySelector('.kicker')?.innerHTML||'',
+    h1:       hero.querySelector('h1')?.innerHTML||'',
+    sub:      hero.querySelector('.sub')?.innerHTML||'',
+    photoSrc: hero.querySelector('.hero-photo img')?.getAttribute('src')||'',
+    photoCap: hero.querySelector('.hero-photo .cap')?.innerHTML||''
   }});
 
-  main.querySelectorAll('section.wrap').forEach(sec => {
-    if (sec.classList.contains('finale')) {
-      blk.push({ id: uid('finale'), type: 'finale', data: {
-        chapNo:    sec.querySelector('.chap-no')?.innerHTML || '',
-        big:       sec.querySelector('.big')?.innerHTML || '',
-        story:     sec.querySelector('.story')?.innerHTML || '',
-        heartbeat: sec.querySelector('.heartbeat')?.innerHTML || '',
-        sig:       sec.querySelector('.sig')?.innerHTML || ''
+  main.querySelectorAll('section.wrap').forEach(sec=>{
+    if(sec.classList.contains('finale')){
+      blk.push({id:uid('finale'),type:'finale',data:{
+        chapNo:    sec.querySelector('.chap-no')?.innerHTML||'',
+        big:       sec.querySelector('.big')?.innerHTML||'',
+        story:     sec.querySelector('.story')?.innerHTML||'',
+        heartbeat: sec.querySelector('.heartbeat')?.innerHTML||'',
+        sig:       sec.querySelector('.sig')?.innerHTML||''
       }});
       return;
     }
 
-    const chapNo = sec.querySelector(':scope > .chap-no');
-    const chapH  = sec.querySelector(':scope > .chap-h');
-    const chapDt = sec.querySelector(':scope > .chap-date');
-    if (chapNo || chapH) blk.push({ id: uid('chap'), type: 'chapter', data: {
-      number: chapNo?.innerHTML || '',
-      title:  chapH?.innerHTML  || '',
-      date:   chapDt?.innerHTML || ''
-    }});
+    const chapNo=sec.querySelector(':scope > .chap-no');
+    const chapH =sec.querySelector(':scope > .chap-h');
+    const chapDt=sec.querySelector(':scope > .chap-date');
+    const chapBlk={id:uid('chap'),type:'chapter',data:{
+      number:chapNo?.innerHTML||'',
+      title: chapH?.innerHTML||'',
+      date:  chapDt?.innerHTML||''
+    },children:[]};
+    blk.push(chapBlk);
 
-    Array.from(sec.children).forEach(el => {
-      if (el.matches('.chap-no,.chap-h,.chap-date')) return;
+    Array.from(sec.children).forEach(el=>{
+      if(el.matches('.chap-no,.chap-h,.chap-date')) return;
+      const ch=chapBlk.children;
 
-      if (el.matches('.story')) { blk.push({ id: uid('story'), type: 'story', data: { html: el.innerHTML } }); return; }
-      if (el.matches('.pull'))  { blk.push({ id: uid('pull'),  type: 'pull',  data: { html: el.innerHTML } }); return; }
-      if (el.matches('.note'))  { blk.push({ id: uid('note'),  type: 'note',  data: { html: el.innerHTML } }); return; }
+      if(el.matches('.story')){ch.push({id:uid('story'),type:'story',data:{html:el.innerHTML}});return;}
+      if(el.matches('.pull')) {ch.push({id:uid('pull'), type:'pull', data:{html:el.innerHTML}});return;}
+      if(el.matches('.note')) {ch.push({id:uid('note'), type:'note', data:{html:el.innerHTML}});return;}
 
-      if (el.matches('.chat')) {
-        const head = el.querySelector('.head');
-        const whoEl = head?.querySelector('.who');
-        const whoTxt = Array.from(whoEl?.childNodes||[]).filter(n=>n.nodeType===3).map(n=>n.textContent.trim()).filter(Boolean).join('');
-        blk.push({ id: uid('chat'), type: 'chat', data: {
-          head: { ava: head?.querySelector('.ava')?.innerHTML||'', who: whoTxt, time: head?.querySelector('small')?.textContent||'' },
-          messages: Array.from(el.querySelectorAll('.brow')).map(brow => {
+      if(el.matches('.chat')){
+        const head=el.querySelector('.head');
+        const whoEl=head?.querySelector('.who');
+        const whoTxt=Array.from(whoEl?.childNodes||[]).filter(n=>n.nodeType===3).map(n=>n.textContent.trim()).filter(Boolean).join('');
+        ch.push({id:uid('chat'),type:'chat',data:{
+          head:{ava:head?.querySelector('.ava')?.innerHTML||'',who:whoTxt,time:head?.querySelector('small')?.textContent||''},
+          messages:Array.from(el.querySelectorAll('.brow')).map(brow=>{
             const side=brow.classList.contains('him')?'him':'her';
             const bub=brow.querySelector('.bubble');
             const tm=bub?.querySelector('.time');
             const txt=bub?Array.from(bub.childNodes).filter(n=>!(n.nodeType===1&&n.classList?.contains('time'))).map(n=>n.textContent).join('').trim():'';
-            return { side, text: txt, time: tm?.textContent||'' };
+            return{side,text:txt,time:tm?.textContent||''};
           })
         }});
-        // .note misplaced as child of .chat due to unclosed div in source HTML
-        const nested = Array.from(el.children).find(c=>c.classList.contains('note'));
-        if (nested) blk.push({ id: uid('note'), type: 'note', data: { html: nested.innerHTML } });
+        const nested=Array.from(el.children).find(c=>c.classList.contains('note'));
+        if(nested) ch.push({id:uid('note'),type:'note',data:{html:nested.innerHTML}});
         return;
       }
 
-      if (el.matches('.gallery')) {
-        blk.push({ id: uid('gal'), type: 'gallery', data: { items: Array.from(el.querySelectorAll('.polaroid')).map(p=>({
-          src: p.querySelector('img')?.getAttribute('src')||'', cap: p.querySelector('.cap')?.innerHTML||'',
-          wide: p.classList.contains('wide'), span2: p.classList.contains('span2')
-        })) }});
-        return;
-      }
+      if(el.matches('.gallery')){ch.push({id:uid('gal'),type:'gallery',data:{items:Array.from(el.querySelectorAll('.polaroid')).map(p=>({
+        src:p.querySelector('img')?.getAttribute('src')||'',cap:p.querySelector('.cap')?.innerHTML||'',
+        wide:p.classList.contains('wide'),span2:p.classList.contains('span2')
+      }))}});return;}
 
-      if (el.matches('.vwall')) {
-        blk.push({ id: uid('vw'), type: 'vwall', data: { items: Array.from(el.querySelectorAll('.vid')).map(v=>({
-          src: v.querySelector('video')?.getAttribute('src')||'',
-          poster: v.querySelector('video')?.getAttribute('poster')||'',
-          cap: v.querySelector('figcaption')?.innerHTML||''
-        })) }});
-        return;
-      }
+      if(el.matches('.vwall')){ch.push({id:uid('vw'),type:'vwall',data:{items:Array.from(el.querySelectorAll('.vid')).map(v=>({
+        src:v.querySelector('video')?.getAttribute('src')||'',
+        poster:v.querySelector('video')?.getAttribute('poster')||'',
+        cap:v.querySelector('figcaption')?.innerHTML||''
+      }))}});return;}
 
-      if (el.matches('.vfeat')) {
+      if(el.matches('.vfeat')){
         const v=el.querySelector('video');
-        blk.push({ id: uid('vf'), type: 'vfeat', data: {
-          src: v?.getAttribute('src')||'', poster: v?.getAttribute('poster')||'',
-          cap: el.querySelector('figcaption')?.innerHTML||''
-        }});
+        ch.push({id:uid('vf'),type:'vfeat',data:{src:v?.getAttribute('src')||'',poster:v?.getAttribute('poster')||'',cap:el.querySelector('figcaption')?.innerHTML||''}});
         return;
       }
 
-      if (el.matches('.polaroid')) {
-        blk.push({ id: uid('pol'), type: 'polaroid', data: {
-          src: el.querySelector('img')?.getAttribute('src')||'', cap: el.querySelector('.cap')?.innerHTML||'',
-          wide: el.classList.contains('wide'), span2: el.classList.contains('span2')
-        }});
-        return;
-      }
+      if(el.matches('.polaroid')){ch.push({id:uid('pol'),type:'polaroid',data:{
+        src:el.querySelector('img')?.getAttribute('src')||'',cap:el.querySelector('.cap')?.innerHTML||'',
+        wide:el.classList.contains('wide'),span2:el.classList.contains('span2')
+      }});return;}
 
-      if (el.matches('.stats')) {
-        blk.push({ id: uid('stats'), type: 'stats', data: { items: Array.from(el.querySelectorAll('.stat')).map(s=>({
-          big: s.querySelector('.big')?.innerHTML||'', lab: s.querySelector('.lab')?.innerHTML||''
-        })) }});
-        return;
-      }
+      if(el.matches('.stats')){ch.push({id:uid('stats'),type:'stats',data:{items:Array.from(el.querySelectorAll('.stat')).map(s=>({
+        big:s.querySelector('.big')?.innerHTML||'',lab:s.querySelector('.lab')?.innerHTML||''
+      }))}});return;}
 
-      if (el.matches('.menu')) {
-        blk.push({ id: uid('menu'), type: 'menu', data: { items: Array.from(el.querySelectorAll('li')).map(li=>({
-          dish: li.querySelector('.dish')?.innerHTML||'', tag: li.querySelector('.tag')?.innerHTML||''
-        })) }});
-        return;
-      }
+      if(el.matches('.menu')){ch.push({id:uid('menu'),type:'menu',data:{items:Array.from(el.querySelectorAll('li')).map(li=>({
+        dish:li.querySelector('.dish')?.innerHTML||'',tag:li.querySelector('.tag')?.innerHTML||''
+      }))}});return;}
     });
   });
 
@@ -1275,15 +1269,14 @@ function _blockEl(b) {
   return el||null;
 }
 
-function renderBlocks(blocks) {
+function renderBlocks(blocks){
   const main=document.getElementById('main');
   const vbar=document.getElementById('versionBar');
-  Array.from(main.children).forEach(c=>{ if(c!==vbar) c.remove(); });
+  Array.from(main.children).forEach(c=>{if(c!==vbar)c.remove();});
 
-  let sec=null;
-  blocks.forEach(b => {
-    if (b.type==='hero') {
-      const h=document.createElement('header'); h.className='hero'; h.dataset.blockId=b.id;
+  blocks.forEach(b=>{
+    if(b.type==='hero'){
+      const h=document.createElement('header');h.className='hero';h.dataset.blockId=b.id;
       h.innerHTML=
         `<div class="kicker reveal">${b.data.kicker}</div>`+
         `<h1 class="reveal" style="margin-bottom:32px">${b.data.h1}</h1>`+
@@ -1291,29 +1284,27 @@ function renderBlocks(blocks) {
         `<p class="sub reveal">${b.data.sub}</p>`+
         `<div class="counter reveal" id="counter"></div>`+
         `<div class="scroll-cue">desce que tem história ↓</div>`;
-      main.appendChild(h); sec=null; return;
+      main.appendChild(h); return;
     }
-    if (b.type==='chapter') {
-      sec=document.createElement('section'); sec.className='wrap'; sec.dataset.blockId=b.id;
+    if(b.type==='chapter'){
+      const sec=document.createElement('section');sec.className='wrap';sec.dataset.blockId=b.id;
       sec.innerHTML=
         `<span class="chap-no reveal">${b.data.number}</span>`+
         `<h2 class="chap-h reveal">${b.data.title}</h2>`+
         (b.data.date?`<div class="chap-date reveal">${b.data.date}</div>`:'');
+      (b.children||[]).forEach(child=>{const el=_blockEl(child);if(el)sec.appendChild(el);});
       main.appendChild(sec); return;
     }
-    if (b.type==='finale') {
-      const s=document.createElement('section'); s.className='wrap finale'; s.dataset.blockId=b.id;
+    if(b.type==='finale'){
+      const s=document.createElement('section');s.className='wrap finale';s.dataset.blockId=b.id;
       s.innerHTML=
         `<span class="chap-no reveal">${b.data.chapNo}</span>`+
         `<p class="big reveal">${b.data.big}</p>`+
         `<p class="story reveal" style="max-width:60ch;margin:0 auto">${b.data.story}</p>`+
         `<div class="heartbeat reveal">${b.data.heartbeat}</div>`+
         `<div class="sig reveal">${b.data.sig}</div>`;
-      main.appendChild(s); sec=null; return;
+      main.appendChild(s); return;
     }
-    if (!sec) return;
-    const el=_blockEl(b);
-    if (el) sec.appendChild(el);
   });
 }
 
@@ -1322,11 +1313,11 @@ function _reinitDOM() {
   _initVideoDOM();
 }
 
-async function initBlocks() {
+async function initBlocks(){
   let blocks=null;
   const supaData=await supaLoad(currentVersion);
-  if (supaData?.blocks?.length) blocks=supaData.blocks;
-  if (!blocks) blocks=parsePageToBlocks();
+  if(supaData?.blocks?.length) blocks=_migrateFlat(supaData.blocks);
+  if(!blocks) blocks=parsePageToBlocks();
   _blocks=blocks;
   renderBlocks(_blocks);
   _reinitDOM();
@@ -1336,105 +1327,195 @@ initBlocks();
 // ─── Block Editor ─────────────────────────────────────────────────────────
 let _editingId = null;
 
-const _BLK_TYPES = [
-  {t:'chapter',  l:'📖 capítulo'},  {t:'story',   l:'📝 texto'},
-  {t:'pull',     l:'💬 destaque'},   {t:'note',    l:'📌 nota'},
-  {t:'chat',     l:'💬 chat'},       {t:'polaroid',l:'📷 polaroid'},
-  {t:'gallery',  l:'🖼 galeria'},    {t:'vwall',   l:'🎬 vídeos'},
-  {t:'vfeat',    l:'🎬 vídeo destaque'},{t:'stats',l:'📊 números'},
-  {t:'menu',     l:'🍽 cardápio'},   {t:'finale',  l:'✨ final'},
-  {t:'hero',     l:'🏠 hero'}
+const _ROOT_TYPES=new Set(['hero','chapter','finale']);
+const _CHILD_TYPES=new Set(['story','pull','note','chat','polaroid','gallery','vwall','vfeat','stats','menu']);
+
+const _BLK_TYPES=[
+  {t:'chapter',l:'📖 capítulo'}, {t:'story',  l:'📝 texto'},
+  {t:'pull',   l:'💬 destaque'},  {t:'note',   l:'📌 nota'},
+  {t:'chat',   l:'💬 chat'},      {t:'polaroid',l:'📷 polaroid'},
+  {t:'gallery',l:'🖼 galeria'},   {t:'vwall',  l:'🎬 vídeos'},
+  {t:'vfeat',  l:'🎬 vídeo destaque'},{t:'stats',l:'📊 números'},
+  {t:'menu',   l:'🍽 cardápio'},  {t:'finale', l:'✨ final'},
+  {t:'hero',   l:'🏠 hero'}
 ];
 
-function _bIdx(id){ return _blocks.findIndex(b=>b.id===id); }
-function _bGet(id){ return _blocks.find(b=>b.id===id); }
+function _bIdx(id){return _blocks.findIndex(b=>b.id===id);}
+function _bGet(id){
+  for(const b of _blocks){
+    if(b.id===id) return b;
+    if(b.children){const c=b.children.find(c=>c.id===id);if(c)return c;}
+  }
+  return undefined;
+}
+function _bParent(id){
+  for(const b of _blocks){
+    if(b.children&&b.children.some(c=>c.id===id)) return b;
+  }
+  return null;
+}
 
 // ── Toolbar ──────────────────────────────────────────────────────────────
-function _rebuildToolbars() {
+function _rebuildToolbars(){
   document.querySelectorAll('.blk-tb').forEach(t=>t.remove());
-  if (!editMode) return;
-  document.querySelectorAll('[data-block-id]').forEach(el => {
-    const id = el.dataset.blockId;
-    const tb = document.createElement('div');
-    tb.className = 'blk-tb';
-    tb.contentEditable = 'false';
-    tb.innerHTML =
-      `<button data-a="drag" title="arrastar">⠿</button>`+
-      `<button data-a="up"   title="mover acima">↑</button>`+
-      `<button data-a="dn"   title="mover abaixo">↓</button>`+
-      `<button data-a="ed"   title="editar">✎</button>`+
-      `<button data-a="ins"  title="inserir abaixo">+</button>`+
-      `<button data-a="del"  title="deletar">🗑</button>`;
-    tb.addEventListener('click', ev => {
+  if(!editMode) return;
+  document.querySelectorAll('[data-block-id]').forEach(el=>{
+    const id=el.dataset.blockId;
+    const isChild=!!_bParent(id);
+    const tb=document.createElement('div');
+    tb.className='blk-tb'; tb.contentEditable='false';
+    tb.innerHTML=
+      (!isChild?`<button data-a="drag" title="arrastar">⠿</button>`:'')+
+      `<button data-a="up" title="↑">↑</button>`+
+      `<button data-a="dn" title="↓">↓</button>`+
+      `<button data-a="ed" title="editar">✎</button>`+
+      `<button data-a="ins" title="+">+</button>`+
+      `<button data-a="del" title="deletar">🗑</button>`;
+    tb.addEventListener('click',ev=>{
       ev.stopPropagation();
-      const a = ev.target.dataset.a;
-      if (a==='up')  _moveBlk(id,-1);
+      const a=ev.target.dataset.a;
+      if(a==='up')  _moveBlk(id,-1);
       else if(a==='dn')  _moveBlk(id,1);
       else if(a==='ed')  _openPanel(id);
       else if(a==='ins') _showInsMenu(id,ev);
       else if(a==='del') _delBlk(id);
     });
     el.appendChild(tb);
+    if(_isMobile()) _attachLongPress(el);
     // Drag-and-drop
-    el.draggable = true;
-    el.addEventListener('dragstart', ev=>{ev.dataTransfer.setData('bid',id);el.classList.add('blk-dragging');ev.stopPropagation();});
-    el.addEventListener('dragend',   ()=>el.classList.remove('blk-dragging'));
-    el.addEventListener('dragover',  ev=>{ev.preventDefault();ev.stopPropagation();el.classList.add('blk-dragover');});
-    el.addEventListener('dragleave', ev=>{if(!el.contains(ev.relatedTarget))el.classList.remove('blk-dragover');});
-    el.addEventListener('drop', ev=>{
-      ev.preventDefault();ev.stopPropagation();
+    el.draggable=true;
+    el.addEventListener('dragstart',ev=>{
+      ev.dataTransfer.setData('bid',id);
+      el.classList.add('blk-dragging');
+      if(!isChild) ev.stopPropagation();
+    });
+    el.addEventListener('dragend',()=>el.classList.remove('blk-dragging'));
+    el.addEventListener('dragover',ev=>{
+      ev.preventDefault();
+      el.classList.add('blk-dragover');
+      if(isChild) ev.stopPropagation();
+    });
+    el.addEventListener('dragleave',ev=>{if(!el.contains(ev.relatedTarget))el.classList.remove('blk-dragover');});
+    el.addEventListener('drop',ev=>{
+      ev.preventDefault();
+      if(isChild) ev.stopPropagation();
       el.classList.remove('blk-dragover');
       const from=ev.dataTransfer.getData('bid');
-      if(from&&from!==id) _moveTo(from,id);
+      if(!from||from===id) return;
+      const fp=_bParent(from),tp=_bParent(id);
+      if(!fp&&!tp) _moveTo(from,id);
+      else if(fp&&tp&&fp.id===tp.id) _moveTo(from,id);
+      // Cross-parent drag: não permitido por spec
     });
   });
 }
 
 function _moveBlk(id,dir){
-  const i=_bIdx(id); if(i<0) return;
-  const ni=i+dir; if(ni<0||ni>=_blocks.length) return;
-  [_blocks[i],_blocks[ni]]=[_blocks[ni],_blocks[i]];
+  const parent=_bParent(id);
+  if(!parent){
+    const i=_bIdx(id);if(i<0)return;
+    const ni=i+dir;if(ni<0||ni>=_blocks.length)return;
+    [_blocks[i],_blocks[ni]]=[_blocks[ni],_blocks[i]];
+  } else {
+    const arr=parent.children;
+    const ci=arr.findIndex(c=>c.id===id);if(ci<0)return;
+    const nci=ci+dir;
+    if(nci<0){
+      // Move para fim do chapter anterior
+      const pi=_bIdx(parent.id);if(pi<=0)return;
+      const prev=_blocks[pi-1];if(prev.type!=='chapter')return;
+      const[ch]=arr.splice(ci,1);(prev.children=prev.children||[]).push(ch);
+    } else if(nci>=arr.length){
+      // Move para início do chapter seguinte
+      const pi=_bIdx(parent.id);if(pi>=_blocks.length-1)return;
+      const next=_blocks[pi+1];if(next.type!=='chapter')return;
+      const[ch]=arr.splice(ci,1);(next.children=next.children||[]).unshift(ch);
+    } else {
+      [arr[ci],arr[nci]]=[arr[nci],arr[ci]];
+    }
+  }
   _reRender();
 }
 
 function _moveTo(fromId,toId){
-  const fi=_bIdx(fromId),ti=_bIdx(toId);
-  if(fi<0||ti<0||fi===ti) return;
-  const [blk]=_blocks.splice(fi,1);
-  _blocks.splice(_bIdx(toId),0,blk);
+  const fp=_bParent(fromId),tp=_bParent(toId);
+  if(!fp&&!tp){
+    const fi=_bIdx(fromId),ti=_bIdx(toId);
+    if(fi<0||ti<0||fi===ti)return;
+    const[blk]=_blocks.splice(fi,1);
+    _blocks.splice(_bIdx(toId),0,blk);
+  } else if(fp&&tp&&fp.id===tp.id){
+    const arr=fp.children;
+    const fi=arr.findIndex(c=>c.id===fromId),ti=arr.findIndex(c=>c.id===toId);
+    if(fi<0||ti<0||fi===ti)return;
+    const[blk]=arr.splice(fi,1);
+    arr.splice(arr.findIndex(c=>c.id===toId),0,blk);
+  }
   _reRender();
 }
 
 function _delBlk(id){
-  if(!confirm('Deletar este bloco?')) return;
-  const i=_bIdx(id); if(i<0) return;
-  _blocks.splice(i,1);
+  if(!confirm('Deletar este bloco?'))return;
+  const parent=_bParent(id);
+  if(parent){
+    const ci=parent.children.findIndex(c=>c.id===id);
+    if(ci>=0)parent.children.splice(ci,1);
+  } else {
+    const ri=_bIdx(id);if(ri>=0)_blocks.splice(ri,1);
+  }
   if(_editingId===id) _closePanel();
   _reRender();
 }
 
-const _BLK_DEFAULTS = {
-  chapter:  {number:'capítulo',title:'novo capítulo',date:''},
-  story:    {html:'escreva aqui...'},
-  pull:     {html:'frase em destaque'},
-  note:     {html:'nota aqui'},
-  chat:     {head:{ava:'?',who:'chat',time:''},messages:[{side:'him',text:'oi',time:''}]},
-  polaroid: {src:'',cap:'legenda',wide:false,span2:false},
-  gallery:  {items:[{src:'',cap:'foto',wide:false,span2:false}]},
-  vwall:    {items:[{src:'',poster:'',cap:'vídeo'}]},
-  vfeat:    {src:'',poster:'',cap:'vídeo destaque'},
-  stats:    {items:[{big:'0',lab:'label'}]},
-  menu:     {items:[{dish:'prato',tag:'tag'}]},
-  finale:   {chapNo:'pra fechar',big:'frase final',story:'texto',heartbeat:'❤',sig:'— assinatura'},
-  hero:     {kicker:'kicker',h1:'título',sub:'subtítulo',photoSrc:'',photoCap:'legenda'}
+const _BLK_DEFAULTS={
+  chapter: {number:'capítulo',title:'novo capítulo',date:''},
+  story:   {html:'escreva aqui...'},
+  pull:    {html:'frase em destaque'},
+  note:    {html:'nota aqui'},
+  chat:    {head:{ava:'?',who:'chat',time:''},messages:[{side:'him',text:'oi',time:''}]},
+  polaroid:{src:'',cap:'legenda',wide:false,span2:false},
+  gallery: {items:[{src:'',cap:'foto',wide:false,span2:false}]},
+  vwall:   {items:[{src:'',poster:'',cap:'vídeo'}]},
+  vfeat:   {src:'',poster:'',cap:'vídeo destaque'},
+  stats:   {items:[{big:'0',lab:'label'}]},
+  menu:    {items:[{dish:'prato',tag:'tag'}]},
+  finale:  {chapNo:'pra fechar',big:'frase final',story:'texto',heartbeat:'❤',sig:'— assinatura'},
+  hero:    {kicker:'kicker',h1:'título',sub:'subtítulo',photoSrc:'',photoCap:'legenda'}
 };
 
 function _insBlk(afterId,type){
-  const i=afterId?_bIdx(afterId):_blocks.length-1;
   const nb={id:type+'-'+Date.now(),type,data:JSON.parse(JSON.stringify(_BLK_DEFAULTS[type]||{}))};
-  _blocks.splice(i+1,0,nb);
+  if(type==='chapter') nb.children=[];
+
+  if(_ROOT_TYPES.has(type)){
+    let i=afterId?_bIdx(afterId):-1;
+    if(i<0){const par=afterId?_bParent(afterId):null;i=par?_bIdx(par.id):_blocks.length-1;}
+    _blocks.splice(i+1,0,nb);
+  } else {
+    let parent=null;
+    if(afterId){
+      parent=_bParent(afterId);
+      if(!parent){const rb=_bGet(afterId);if(rb?.type==='chapter')parent=rb;}
+    }
+    if(!parent) parent=[..._blocks].reverse().find(b=>b.type==='chapter');
+    if(!parent) return;
+    if(!parent.children) parent.children=[];
+    if(afterId&&parent.children.some(c=>c.id===afterId)){
+      const ci=parent.children.findIndex(c=>c.id===afterId);
+      parent.children.splice(ci+1,0,nb);
+    } else {
+      parent.children.push(nb);
+    }
+  }
   _reRender();
   _openPanel(nb.id);
+  // Auto-abre seletor de arquivo em blocos de foto
+  if(type==='polaroid'||type==='gallery'){
+    requestAnimationFrame(()=>{
+      const fi=document.getElementById('blkPanel')?.querySelector('input[type="file"]');
+      if(fi) fi.click();
+    });
+  }
 }
 
 function _reRender(){
@@ -1679,8 +1760,10 @@ function _applyPanel(id,fields,type){
 function _showInsMenu(afterId,ev){
   const menu=document.getElementById('blkInsertMenu');
   menu.innerHTML='';
+  const isChild=!!_bParent(afterId);
   _BLK_TYPES.forEach(({t,l})=>{
-    const btn=document.createElement('button'); btn.type='button'; btn.textContent=l;
+    if(isChild&&_ROOT_TYPES.has(t)) return; // contexto filho: só tipos filhos
+    const btn=document.createElement('button');btn.type='button';btn.textContent=l;
     btn.addEventListener('click',()=>{menu.classList.remove('open');_insBlk(afterId,t);});
     menu.appendChild(btn);
   });
