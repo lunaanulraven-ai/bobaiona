@@ -154,6 +154,36 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 #editorPanel select{width:100%;background:rgba(255,255,255,.07);color:var(--cream);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:5px 8px;font-size:.9rem}
 #editorPanel details summary{font-size:.8rem;opacity:.55;cursor:pointer;padding:4px 0}
 #editorPanel details>div{margin-top:6px;display:flex;flex-direction:column;gap:6px}
+/* ─── Block editor ──────────────────────────────────────────────────────── */
+#main.edit-mode [data-block-id]{position:relative;outline:1px dashed rgba(232,166,160,.12);border-radius:6px}
+#main.edit-mode [data-block-id]:hover{outline-color:rgba(232,166,160,.38)}
+.blk-tb{position:absolute;top:0;right:0;display:flex;gap:1px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:400;background:rgba(16,7,14,.92);border:1px solid rgba(232,166,160,.25);border-radius:0 6px 0 8px;padding:2px 4px}
+#main.edit-mode [data-block-id]:hover>.blk-tb,#main.edit-mode .blk-sel>.blk-tb{opacity:1;pointer-events:auto}
+.blk-tb button{background:none;border:0;color:var(--cream);padding:2px 5px;cursor:pointer;font-size:.75rem;border-radius:4px;line-height:1.6}
+.blk-tb button:hover{background:rgba(232,166,160,.18)}
+.blk-dragging{opacity:.3!important}
+.blk-dragover{outline:2px solid var(--gold)!important;outline-offset:2px}
+.blk-sel{outline:2px solid rgba(226,183,115,.55)!important}
+#blkPanel{position:fixed;top:0;right:0;bottom:0;width:320px;max-width:96vw;background:rgba(16,7,14,.97);border-left:1px solid rgba(232,166,160,.18);padding:50px 14px 14px;overflow-y:auto;z-index:1250;display:none;flex-direction:column;gap:8px}
+#blkPanel.open{display:flex}
+#blkPanel h3{font-family:'Caveat',cursive;font-size:1.25rem;color:var(--gold)}
+#blkPanel label{font-size:.8rem;opacity:.6;display:block;margin:5px 0 2px}
+#blkPanel input[type="text"],#blkPanel input[type="url"],#blkPanel textarea,#blkPanel select{width:100%;background:rgba(255,255,255,.06);color:var(--cream);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:5px 9px;font-size:.88rem;font-family:'Spectral',serif;box-sizing:border-box}
+#blkPanel textarea{min-height:72px;resize:vertical}
+#blkPanel .bp-apply{width:100%;padding:8px;background:var(--rose);color:#fff;border:0;border-radius:9px;font-family:'Caveat',cursive;font-size:1.15rem;cursor:pointer;margin-top:2px}
+#blkPanel .bp-apply:hover{opacity:.86}
+#blkPanel .bp-close{position:absolute;top:12px;right:12px;background:none;border:0;color:var(--cream);cursor:pointer;font-size:1.3rem;line-height:1;opacity:.7}
+#blkPanel .bp-close:hover{opacity:1;color:var(--rose)}
+#blkPanel .bp-row{display:flex;gap:5px;align-items:center;margin:3px 0;background:rgba(255,255,255,.04);border-radius:6px;padding:5px 7px}
+#blkPanel .bp-row select{width:60px;flex-shrink:0}
+#blkPanel .bp-del{background:none;border:0;color:var(--rose);cursor:pointer;font-size:.9rem;padding:0 3px;flex-shrink:0}
+#blkPanel .bp-add{width:100%;background:rgba(232,166,160,.07);border:1px dashed rgba(232,166,160,.28);color:var(--blush);border-radius:7px;padding:5px;cursor:pointer;font-family:'Caveat',cursive;font-size:.95rem;margin-top:3px}
+#blkPanel .bp-sub{opacity:.55;font-size:.75rem;display:block;margin:6px 0 2px}
+#blkPanel .bp-item{background:rgba(255,255,255,.04);border-radius:7px;padding:8px;margin:4px 0;display:flex;flex-direction:column;gap:4px}
+#blkInsertMenu{position:fixed;background:rgba(16,7,14,.97);border:1px solid rgba(232,166,160,.28);border-radius:9px;padding:5px 0;z-index:1500;display:none;min-width:162px;box-shadow:0 10px 28px rgba(0,0,0,.6)}
+#blkInsertMenu.open{display:block}
+#blkInsertMenu button{display:block;width:100%;background:none;border:0;color:var(--cream);padding:6px 14px;text-align:left;cursor:pointer;font-family:'Caveat',cursive;font-size:1rem}
+#blkInsertMenu button:hover{background:rgba(232,166,160,.1)}
 </style></head><body>
 <a class="skip-link" href="#main">Pular para o conteúdo</a>
 <div id="bar"></div>
@@ -181,15 +211,13 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 <div id="editorPanel" aria-hidden="true" style="display:none">
   <div class="editor-inner">
     <h3>✏️ editar página</h3>
-    <p style="font-size:.85rem;opacity:.7;margin-bottom:8px">toque em qualquer texto pra editar direto 🤍</p>
+    <p style="font-size:.82rem;opacity:.6;margin-bottom:6px">passe o mouse sobre qualquer parte pra editar 🤍</p>
     <button id="saveBtn" class="editor-save-btn">💾 salvar tudo</button>
     <span id="syncStatus"></span>
     <hr />
     <div class="editor-section">
-      <h4>📸 adicionar foto</h4>
-      <input id="polaroidCap" placeholder="legenda (opcional)" />
-      <input id="polaroidFile" type="file" accept="image/*" />
-      <button id="addPolaroid">adicionar foto</button>
+      <h4>🎨 clima da página</h4>
+      <div id="themePicker"></div>
     </div>
     <hr />
     <div class="editor-section">
@@ -207,35 +235,25 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
       </div>
     </div>
     <hr />
-    <div class="editor-section">
-      <h4>🎨 clima da página</h4>
-      <div id="themePicker"></div>
-    </div>
-    <hr />
     <details>
-      <summary>··· recursos avançados</summary>
+      <summary>··· mais opções</summary>
       <div>
         <button id="exportBtn">exportar JSON</button>
         <button id="loadBtn">carregar salvo local</button>
-        <label for="importFile" class="btn">importar JSON</label><input id="importFile" type="file" accept="application/json" style="display:none" />
+        <label for="importFile" class="btn">importar JSON</label>
+        <input id="importFile" type="file" accept="application/json" style="display:none" />
+        <input id="polaroidCap" style="display:none" />
+        <input id="polaroidFile" type="file" accept="image/*" style="display:none" />
+        <button id="addPolaroid" style="display:none">adicionar foto</button>
       </div>
     </details>
   </div>
 </div>
 
-<!-- Advanced block editor modal -->
-<div id="advEditor" aria-hidden="true" style="display:none">
-  <div class="adv-inner">
-    <header class="adv-header"><h3>Editor por blocos</h3><button id="advClose">Fechar</button></header>
-    <div class="adv-controls">
-      <select id="newBlockType"><option value="section">Seção</option><option value="heading">Título</option><option value="paragraph">Parágrafo</option><option value="polaroid">Polaroid (imagem)</option></select>
-      <input id="newBlockFile" type="file" accept="image/*" style="display:none" />
-      <button id="addBlockBtn">Adicionar bloco</button>
-      <button id="applyBlocks">Aplicar</button>
-    </div>
-    <div id="blockList"></div>
-  </div>
-</div>
+<!-- Block editor side panel -->
+<div id="blkPanel" aria-hidden="true"></div>
+<!-- Block insert type menu -->
+<div id="blkInsertMenu"></div>
 
 <main id="main" tabindex="-1">
 <div id="versionBar" aria-label="Escolher versão">
@@ -751,8 +769,17 @@ function toggleEditor(){
   editToggle.setAttribute('aria-pressed', String(editMode));
   editorPanel.style.display = editMode ? 'block' : 'none';
   editorPanel.setAttribute('aria-hidden', String(!editMode));
-  setEditable(editMode);
-  if (editMode) _buildMusicSectionSelect();
+  const main = document.getElementById('main');
+  if (editMode) {
+    main.classList.add('edit-mode');
+    _buildMusicSectionSelect();
+    _rebuildToolbars();
+  } else {
+    main.classList.remove('edit-mode');
+    document.querySelectorAll('.blk-tb').forEach(t=>t.remove());
+    document.querySelectorAll('[data-block-id]').forEach(el=>{el.removeAttribute('draggable');el.classList.remove('blk-sel');});
+    _closePanel();
+  }
 }
 
 // Show the toggle (visible by default)
@@ -827,7 +854,7 @@ async function supaSave(ver, payload) {
 
 async function saveAll() {
   const theme = localStorage.getItem('bobaiona_theme_' + currentVersion) || 'padrao';
-  const payload = { texts: gatherEditable(), photos: gatherPhotos(), music: MUSIC_CONFIG, theme };
+  const payload = { texts: gatherEditable(), photos: gatherPhotos(), music: MUSIC_CONFIG, theme, blocks: _blocks };
   try { localStorage.setItem('bobaiona_data_' + currentVersion, JSON.stringify(payload)); } catch(e) {}
   const status = document.getElementById('syncStatus');
   if (status) status.textContent = 'salvando...';
@@ -1244,6 +1271,7 @@ function _blockEl(b) {
     el=document.createElement('ul'); el.className='menu reveal';
     el.innerHTML=d.items.map(i=>`<li><span class="dish">${i.dish}</span><span class="tag">${i.tag}</span></li>`).join('');
   }
+  if(el) el.dataset.blockId=b.id;
   return el||null;
 }
 
@@ -1255,7 +1283,7 @@ function renderBlocks(blocks) {
   let sec=null;
   blocks.forEach(b => {
     if (b.type==='hero') {
-      const h=document.createElement('header'); h.className='hero';
+      const h=document.createElement('header'); h.className='hero'; h.dataset.blockId=b.id;
       h.innerHTML=
         `<div class="kicker reveal">${b.data.kicker}</div>`+
         `<h1 class="reveal" style="margin-bottom:32px">${b.data.h1}</h1>`+
@@ -1266,7 +1294,7 @@ function renderBlocks(blocks) {
       main.appendChild(h); sec=null; return;
     }
     if (b.type==='chapter') {
-      sec=document.createElement('section'); sec.className='wrap';
+      sec=document.createElement('section'); sec.className='wrap'; sec.dataset.blockId=b.id;
       sec.innerHTML=
         `<span class="chap-no reveal">${b.data.number}</span>`+
         `<h2 class="chap-h reveal">${b.data.title}</h2>`+
@@ -1274,7 +1302,7 @@ function renderBlocks(blocks) {
       main.appendChild(sec); return;
     }
     if (b.type==='finale') {
-      const s=document.createElement('section'); s.className='wrap finale';
+      const s=document.createElement('section'); s.className='wrap finale'; s.dataset.blockId=b.id;
       s.innerHTML=
         `<span class="chap-no reveal">${b.data.chapNo}</span>`+
         `<p class="big reveal">${b.data.big}</p>`+
@@ -1304,6 +1332,380 @@ async function initBlocks() {
   _reinitDOM();
 }
 initBlocks();
+
+// ─── Block Editor ─────────────────────────────────────────────────────────
+let _editingId = null;
+
+const _BLK_TYPES = [
+  {t:'chapter',  l:'📖 capítulo'},  {t:'story',   l:'📝 texto'},
+  {t:'pull',     l:'💬 destaque'},   {t:'note',    l:'📌 nota'},
+  {t:'chat',     l:'💬 chat'},       {t:'polaroid',l:'📷 polaroid'},
+  {t:'gallery',  l:'🖼 galeria'},    {t:'vwall',   l:'🎬 vídeos'},
+  {t:'vfeat',    l:'🎬 vídeo destaque'},{t:'stats',l:'📊 números'},
+  {t:'menu',     l:'🍽 cardápio'},   {t:'finale',  l:'✨ final'},
+  {t:'hero',     l:'🏠 hero'}
+];
+
+function _bIdx(id){ return _blocks.findIndex(b=>b.id===id); }
+function _bGet(id){ return _blocks.find(b=>b.id===id); }
+
+// ── Toolbar ──────────────────────────────────────────────────────────────
+function _rebuildToolbars() {
+  document.querySelectorAll('.blk-tb').forEach(t=>t.remove());
+  if (!editMode) return;
+  document.querySelectorAll('[data-block-id]').forEach(el => {
+    const id = el.dataset.blockId;
+    const tb = document.createElement('div');
+    tb.className = 'blk-tb';
+    tb.contentEditable = 'false';
+    tb.innerHTML =
+      `<button data-a="drag" title="arrastar">⠿</button>`+
+      `<button data-a="up"   title="mover acima">↑</button>`+
+      `<button data-a="dn"   title="mover abaixo">↓</button>`+
+      `<button data-a="ed"   title="editar">✎</button>`+
+      `<button data-a="ins"  title="inserir abaixo">+</button>`+
+      `<button data-a="del"  title="deletar">🗑</button>`;
+    tb.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const a = ev.target.dataset.a;
+      if (a==='up')  _moveBlk(id,-1);
+      else if(a==='dn')  _moveBlk(id,1);
+      else if(a==='ed')  _openPanel(id);
+      else if(a==='ins') _showInsMenu(id,ev);
+      else if(a==='del') _delBlk(id);
+    });
+    el.appendChild(tb);
+    // Drag-and-drop
+    el.draggable = true;
+    el.addEventListener('dragstart', ev=>{ev.dataTransfer.setData('bid',id);el.classList.add('blk-dragging');ev.stopPropagation();});
+    el.addEventListener('dragend',   ()=>el.classList.remove('blk-dragging'));
+    el.addEventListener('dragover',  ev=>{ev.preventDefault();ev.stopPropagation();el.classList.add('blk-dragover');});
+    el.addEventListener('dragleave', ev=>{if(!el.contains(ev.relatedTarget))el.classList.remove('blk-dragover');});
+    el.addEventListener('drop', ev=>{
+      ev.preventDefault();ev.stopPropagation();
+      el.classList.remove('blk-dragover');
+      const from=ev.dataTransfer.getData('bid');
+      if(from&&from!==id) _moveTo(from,id);
+    });
+  });
+}
+
+function _moveBlk(id,dir){
+  const i=_bIdx(id); if(i<0) return;
+  const ni=i+dir; if(ni<0||ni>=_blocks.length) return;
+  [_blocks[i],_blocks[ni]]=[_blocks[ni],_blocks[i]];
+  _reRender();
+}
+
+function _moveTo(fromId,toId){
+  const fi=_bIdx(fromId),ti=_bIdx(toId);
+  if(fi<0||ti<0||fi===ti) return;
+  const [blk]=_blocks.splice(fi,1);
+  _blocks.splice(_bIdx(toId),0,blk);
+  _reRender();
+}
+
+function _delBlk(id){
+  if(!confirm('Deletar este bloco?')) return;
+  const i=_bIdx(id); if(i<0) return;
+  _blocks.splice(i,1);
+  if(_editingId===id) _closePanel();
+  _reRender();
+}
+
+const _BLK_DEFAULTS = {
+  chapter:  {number:'capítulo',title:'novo capítulo',date:''},
+  story:    {html:'escreva aqui...'},
+  pull:     {html:'frase em destaque'},
+  note:     {html:'nota aqui'},
+  chat:     {head:{ava:'?',who:'chat',time:''},messages:[{side:'him',text:'oi',time:''}]},
+  polaroid: {src:'',cap:'legenda',wide:false,span2:false},
+  gallery:  {items:[{src:'',cap:'foto',wide:false,span2:false}]},
+  vwall:    {items:[{src:'',poster:'',cap:'vídeo'}]},
+  vfeat:    {src:'',poster:'',cap:'vídeo destaque'},
+  stats:    {items:[{big:'0',lab:'label'}]},
+  menu:     {items:[{dish:'prato',tag:'tag'}]},
+  finale:   {chapNo:'pra fechar',big:'frase final',story:'texto',heartbeat:'❤',sig:'— assinatura'},
+  hero:     {kicker:'kicker',h1:'título',sub:'subtítulo',photoSrc:'',photoCap:'legenda'}
+};
+
+function _insBlk(afterId,type){
+  const i=afterId?_bIdx(afterId):_blocks.length-1;
+  const nb={id:type+'-'+Date.now(),type,data:JSON.parse(JSON.stringify(_BLK_DEFAULTS[type]||{}))};
+  _blocks.splice(i+1,0,nb);
+  _reRender();
+  _openPanel(nb.id);
+}
+
+function _reRender(){
+  renderBlocks(_blocks);
+  _reinitDOM();
+  if(editMode) _rebuildToolbars();
+  if(_editingId){
+    const el=document.querySelector('[data-block-id="'+_editingId+'"]');
+    if(el) el.classList.add('blk-sel');
+  }
+}
+
+// ── Panel helpers ────────────────────────────────────────────────────────
+function _lbl(txt){ const l=document.createElement('label');l.textContent=txt;return l; }
+function _inp(val,ph){
+  const i=document.createElement('input');i.type='text';i.value=val||'';
+  if(ph) i.placeholder=ph; return i;
+}
+function _ta(val){
+  const t=document.createElement('textarea');t.value=val||'';return t;
+}
+function _fld(label,el){
+  const w=document.createElement('div');w.appendChild(_lbl(label));w.appendChild(el);return w;
+}
+function _delBtn(){
+  const b=document.createElement('button');b.className='bp-del';b.textContent='✕';b.type='button';return b;
+}
+function _addBtn(txt){
+  const b=document.createElement('button');b.className='bp-add';b.textContent=txt;b.type='button';return b;
+}
+
+// ── Panel ────────────────────────────────────────────────────────────────
+function _openPanel(id){
+  _editingId=id;
+  const blk=_bGet(id); if(!blk) return;
+  const panel=document.getElementById('blkPanel');
+  panel.innerHTML='';
+  panel.classList.add('open');
+  panel.setAttribute('aria-hidden','false');
+
+  const cl=document.createElement('button'); cl.className='bp-close'; cl.textContent='✕'; cl.type='button';
+  cl.addEventListener('click',_closePanel); panel.appendChild(cl);
+
+  const h=document.createElement('h3'); h.textContent=({
+    chapter:'📖 capítulo',story:'📝 texto',pull:'💬 destaque',note:'📌 nota',
+    chat:'💬 chat',polaroid:'📷 polaroid',gallery:'🖼 galeria',vwall:'🎬 vídeos',
+    vfeat:'🎬 vídeo destaque',stats:'📊 números',menu:'🍽 cardápio',
+    finale:'✨ final',hero:'🏠 hero'
+  })[blk.type]||blk.type;
+  panel.appendChild(h);
+
+  const fields=_buildFields(blk);
+  panel.appendChild(fields);
+
+  const ap=document.createElement('button'); ap.className='bp-apply'; ap.textContent='✓ aplicar'; ap.type='button';
+  ap.addEventListener('click',()=>_applyPanel(id,fields,blk.type));
+  panel.appendChild(ap);
+
+  document.querySelectorAll('.blk-sel').forEach(e=>e.classList.remove('blk-sel'));
+  const el=document.querySelector('[data-block-id="'+id+'"]');
+  if(el) el.classList.add('blk-sel');
+}
+
+function _closePanel(){
+  _editingId=null;
+  const p=document.getElementById('blkPanel');
+  p.classList.remove('open'); p.setAttribute('aria-hidden','true');
+  document.querySelectorAll('.blk-sel').forEach(e=>e.classList.remove('blk-sel'));
+}
+
+function _buildFields(blk){
+  const {type:t,data:d}=blk;
+  const w=document.createElement('div'); w.style.cssText='display:flex;flex-direction:column;gap:6px';
+
+  if(t==='chapter'){
+    w._number=_inp(d.number); w._title=_inp(d.title); w._date=_inp(d.date,'data');
+    [_fld('número',w._number),_fld('título',w._title),_fld('data',w._date)].forEach(f=>w.appendChild(f));
+
+  }else if(t==='story'||t==='pull'||t==='note'){
+    w._html=_ta(d.html); w.appendChild(_fld('conteúdo (html)',w._html));
+
+  }else if(t==='chat'){
+    const sub=document.createElement('span'); sub.className='bp-sub'; sub.textContent='cabeçalho';
+    w.appendChild(sub);
+    w._ava=_inp(d.head.ava,'letra'); w._who=_inp(d.head.who,'nome'); w._time=_inp(d.head.time,'data/hora');
+    [_fld('avatar',w._ava),_fld('nome',w._who),_fld('hora',w._time)].forEach(f=>w.appendChild(f));
+
+    const ms=document.createElement('span'); ms.className='bp-sub'; ms.textContent='mensagens'; w.appendChild(ms);
+    const ml=document.createElement('div'); w._ml=ml;
+    const addMsg=m=>{
+      const row=document.createElement('div'); row.className='bp-row';
+      const sel=document.createElement('select');
+      sel.innerHTML=`<option value="him"${m.side==='him'?' selected':''}>ele</option><option value="her"${m.side==='her'?' selected':''}>ela</option>`;
+      const ti=_inp(m.text,'mensagem'); ti.style.flex='1';
+      const tm=_inp(m.time,'hora'); tm.style.width='56px';
+      const db=_delBtn(); db.addEventListener('click',()=>row.remove());
+      [sel,ti,tm,db].forEach(e=>row.appendChild(e));
+      row._sel=sel; row._ti=ti; row._tm=tm;
+      ml.appendChild(row);
+    };
+    (d.messages||[]).forEach(addMsg); w.appendChild(ml);
+    const ab=_addBtn('+ mensagem'); ab.addEventListener('click',()=>addMsg({side:'him',text:'',time:''})); w.appendChild(ab);
+
+  }else if(t==='polaroid'){
+    w._src=_inp(d.src,'url da imagem'); w._cap=_inp(d.cap,'legenda');
+    [_fld('url',w._src),_fld('legenda',w._cap)].forEach(f=>w.appendChild(f));
+    _imgUploadRow(w,v=>w._src.value=v);
+    w._wide=_chk(w,'formato largo (16:9)',d.wide);
+    w._span2=_chk(w,'largura total',d.span2);
+
+  }else if(t==='gallery'){
+    const il=document.createElement('div'); w._il=il;
+    const addI=item=>{
+      const row=document.createElement('div'); row.className='bp-item';
+      row._src=_inp(item.src||'','url'); row._cap=_inp(item.cap||'','legenda');
+      const db=_delBtn(); db.addEventListener('click',()=>row.remove());
+      [_fld('url',row._src),_fld('legenda',row._cap)].forEach(f=>row.appendChild(f));
+      _imgUploadRowIn(row,v=>row._src.value=v);
+      row.appendChild(db); il.appendChild(row);
+    };
+    (d.items||[]).forEach(addI); w.appendChild(il);
+    const ab=_addBtn('+ foto'); ab.addEventListener('click',()=>addI({src:'',cap:''})); w.appendChild(ab);
+
+  }else if(t==='vwall'){
+    const il=document.createElement('div'); w._il=il;
+    const addI=item=>{
+      const row=document.createElement('div'); row.className='bp-item';
+      row._src=_inp(item.src||'','src do vídeo');
+      row._poster=_inp(item.poster||'','poster (url)');
+      row._cap=_inp(item.cap||'','legenda');
+      const db=_delBtn(); db.addEventListener('click',()=>row.remove());
+      [_fld('src',row._src),_fld('poster',row._poster),_fld('legenda',row._cap),db].forEach(e=>row.appendChild(e));
+      il.appendChild(row);
+    };
+    (d.items||[]).forEach(addI); w.appendChild(il);
+    const ab=_addBtn('+ vídeo'); ab.addEventListener('click',()=>addI({src:'',poster:'',cap:''})); w.appendChild(ab);
+
+  }else if(t==='vfeat'){
+    w._src=_inp(d.src,'src do vídeo'); w._poster=_inp(d.poster,'poster (url)'); w._cap=_inp(d.cap,'legenda');
+    [_fld('src',w._src),_fld('poster',w._poster),_fld('legenda',w._cap)].forEach(f=>w.appendChild(f));
+
+  }else if(t==='stats'){
+    const il=document.createElement('div'); w._il=il;
+    const addI=item=>{
+      const row=document.createElement('div'); row.className='bp-row';
+      row._big=_inp(item.big||'','número'); row._big.style.width='80px';
+      row._lab=_inp(item.lab||'','label'); row._lab.style.flex='1';
+      const db=_delBtn(); db.addEventListener('click',()=>row.remove());
+      [row._big,row._lab,db].forEach(e=>row.appendChild(e)); il.appendChild(row);
+    };
+    (d.items||[]).forEach(addI); w.appendChild(il);
+    const ab=_addBtn('+ stat'); ab.addEventListener('click',()=>addI({big:'',lab:''})); w.appendChild(ab);
+
+  }else if(t==='menu'){
+    const il=document.createElement('div'); w._il=il;
+    const addI=item=>{
+      const row=document.createElement('div'); row.className='bp-row';
+      row._dish=_inp(item.dish||'','prato'); row._dish.style.flex='1';
+      row._tag=_inp(item.tag||'','tag'); row._tag.style.width='72px';
+      const db=_delBtn(); db.addEventListener('click',()=>row.remove());
+      [row._dish,row._tag,db].forEach(e=>row.appendChild(e)); il.appendChild(row);
+    };
+    (d.items||[]).forEach(addI); w.appendChild(il);
+    const ab=_addBtn('+ item'); ab.addEventListener('click',()=>addI({dish:'',tag:''})); w.appendChild(ab);
+
+  }else if(t==='finale'){
+    w._chapNo=_inp(d.chapNo); w._big=_inp(d.big); w._story=_ta(d.story);
+    w._heartbeat=_inp(d.heartbeat); w._sig=_inp(d.sig);
+    [_fld('chapNo',w._chapNo),_fld('frase grande',w._big),_fld('texto',w._story),
+     _fld('heartbeat',w._heartbeat),_fld('assinatura',w._sig)].forEach(f=>w.appendChild(f));
+
+  }else if(t==='hero'){
+    w._kicker=_inp(d.kicker); w._h1=_ta(d.h1); w._sub=_ta(d.sub);
+    w._photoSrc=_inp(d.photoSrc,'url da foto'); w._photoCap=_inp(d.photoCap,'legenda');
+    [_fld('kicker',w._kicker),_fld('h1 (html)',w._h1),_fld('subtítulo',w._sub),
+     _fld('url da foto',w._photoSrc),_fld('legenda da foto',w._photoCap)].forEach(f=>w.appendChild(f));
+    _imgUploadRow(w,v=>w._photoSrc.value=v);
+  }
+  return w;
+}
+
+function _chk(parent,label,checked){
+  const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:8px;margin:3px 0';
+  const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!checked;
+  const lb=document.createElement('label'); lb.textContent=label; lb.style.opacity='.65';
+  row.appendChild(cb); row.appendChild(lb); parent.appendChild(row); return cb;
+}
+
+function _imgUploadRow(parent,onUrl){
+  _imgUploadRowIn(parent,onUrl);
+}
+function _imgUploadRowIn(parent,onUrl){
+  const row=document.createElement('div');
+  const lb=document.createElement('label'); lb.textContent='ou enviar imagem:'; lb.style.opacity='.6';
+  const fi=document.createElement('input'); fi.type='file'; fi.accept='image/*';
+  fi.style.cssText='color:var(--cream);font-size:.8rem';
+  fi.addEventListener('change',async()=>{
+    const f=fi.files[0]; if(!f) return;
+    lb.textContent='enviando... ⏳';
+    const url=await _uploadMedia(f);
+    if(url){onUrl(url);lb.textContent='enviado ✓';}
+    else{lb.textContent='erro no upload 😞';}
+  });
+  row.appendChild(lb); row.appendChild(fi); parent.appendChild(row);
+}
+
+function _applyPanel(id,fields,type){
+  const blk=_bGet(id); if(!blk) return;
+  const d=blk.data;
+  if(type==='chapter'){
+    d.number=fields._number.value; d.title=fields._title.value; d.date=fields._date.value;
+  }else if(type==='story'||type==='pull'||type==='note'){
+    d.html=fields._html.value;
+  }else if(type==='chat'){
+    d.head={ava:fields._ava.value,who:fields._who.value,time:fields._time.value};
+    d.messages=Array.from(fields._ml.children).map(r=>({side:r._sel.value,text:r._ti.value,time:r._tm.value}));
+  }else if(type==='polaroid'){
+    d.src=fields._src.value; d.cap=fields._cap.value;
+    d.wide=fields._wide.checked; d.span2=fields._span2.checked;
+  }else if(type==='gallery'){
+    d.items=Array.from(fields._il.children).map(r=>({src:r._src.value,cap:r._cap.value,wide:false,span2:false}));
+  }else if(type==='vwall'){
+    d.items=Array.from(fields._il.children).map(r=>({src:r._src.value,poster:r._poster.value,cap:r._cap.value}));
+  }else if(type==='vfeat'){
+    d.src=fields._src.value; d.poster=fields._poster.value; d.cap=fields._cap.value;
+  }else if(type==='stats'){
+    d.items=Array.from(fields._il.children).map(r=>({big:r._big.value,lab:r._lab.value}));
+  }else if(type==='menu'){
+    d.items=Array.from(fields._il.children).map(r=>({dish:r._dish.value,tag:r._tag.value}));
+  }else if(type==='finale'){
+    d.chapNo=fields._chapNo.value; d.big=fields._big.value; d.story=fields._story.value;
+    d.heartbeat=fields._heartbeat.value; d.sig=fields._sig.value;
+  }else if(type==='hero'){
+    d.kicker=fields._kicker.value; d.h1=fields._h1.value; d.sub=fields._sub.value;
+    d.photoSrc=fields._photoSrc.value; d.photoCap=fields._photoCap.value;
+  }
+  _reRender();
+  _openPanel(id);
+}
+
+// ── Insert menu ──────────────────────────────────────────────────────────
+function _showInsMenu(afterId,ev){
+  const menu=document.getElementById('blkInsertMenu');
+  menu.innerHTML='';
+  _BLK_TYPES.forEach(({t,l})=>{
+    const btn=document.createElement('button'); btn.type='button'; btn.textContent=l;
+    btn.addEventListener('click',()=>{menu.classList.remove('open');_insBlk(afterId,t);});
+    menu.appendChild(btn);
+  });
+  menu.classList.add('open');
+  const r=ev.target.getBoundingClientRect();
+  menu.style.top=(r.bottom+4)+'px';
+  menu.style.left=Math.min(r.left,window.innerWidth-170)+'px';
+  const close=()=>{menu.classList.remove('open');document.removeEventListener('click',close);};
+  setTimeout(()=>document.addEventListener('click',close),10);
+}
+
+// ── Supabase Storage upload ──────────────────────────────────────────────
+async function _uploadMedia(file){
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const fname=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
+  try{
+    const res=await fetch(SUPABASE_URL+'/storage/v1/object/midia/'+fname,{
+      method:'PUT',
+      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':file.type||'image/jpeg'},
+      body:file
+    });
+    if(!res.ok) return null;
+    return SUPABASE_URL+'/storage/v1/object/public/midia/'+fname;
+  }catch(e){return null;}
+}
 
 // keyboard shortcut: Ctrl+E to toggle editor
 window.addEventListener('keydown',(e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); toggleEditor(); } });
