@@ -1,4 +1,14 @@
-<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Pra minha bobaiona 🤍</title><link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Caveat:wght@500;700&family=Spectral:ital,wght@0,300;0,400;1,400&display=swap' rel='stylesheet'><style>
+ 
+<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <meta name="description" content="Uma página feita à mão: a história do bobaião e da bobaiona — memórias, fotos e vídeos." />
+  <meta name="theme-color" content="#160c14" />
+  <meta property="og:title" content="Pra minha bobaiona 🤍" />
+  <meta property="og:description" content="Uma página feita à mão: a história do bobaião e da bobaiona — memórias, fotos e vídeos." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
+  <title>Pra minha bobaiona 🤍</title>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Caveat:wght@500;700&family=Spectral:ital,wght@0,300;0,400;1,400&display=swap' rel='stylesheet'><style>
 :root{
   --bg:#160c14; --bg2:#241320; --plum:#37192b;
   --cream:#f7ece2; --soft:#e7d7c9; --blush:#e8a6a0; --rose:#d6726f; --gold:#e2b773;
@@ -13,6 +23,26 @@ body{
   background-attachment:fixed; color:var(--cream);
   font-family:'Spectral',Georgia,serif; line-height:1.75; overflow-x:hidden;
 }
+/* Skip link visible on keyboard focus */
+.skip-link{position:absolute;left:12px;top:12px;background:#fff;color:#160c14;padding:8px 10px;border-radius:6px;z-index:1100;transform:translateY(-120%);opacity:0;transition:transform .18s,opacity .18s}
+.skip-link:focus{transform:none;opacity:1}
+
+/* Focus styles for keyboard users */
+:focus{outline: none}
+button:focus-visible, .polaroid:focus-visible, [data-vid]:focus-visible, .menu li:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offset:3px}
+
+/* Editor UI styles */
+#editToggle{position:fixed;right:18px;bottom:18px;z-index:1200;background:var(--rose);color:#fff;border:0;padding:12px 14px;border-radius:12px;font-size:1rem;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,.36)}
+#editToggle[aria-pressed="true"]{transform:scale(.98);background:var(--gold);color:#160c14}
+#editorPanel{position:fixed;right:18px;bottom:72px;width:320px;max-width:92vw;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.06);backdrop-filter:blur(8px);padding:12px;border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,.6);z-index:1200}
+#editorPanel .editor-inner{color:var(--cream)}
+#editorPanel .editor-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+#editorPanel button, #editorPanel .btn{background:var(--blush);color:#fff;border:0;padding:6px 10px;border-radius:8px;cursor:pointer}
+#editorPanel input[type="file"]{color:transparent}
+#editorPanel input, #editorPanel label{width:100%;display:block;margin:6px 0}
+.editable-outline{box-shadow:0 0 0 3px rgba(226,183,115,.12) inset;}
+
+
 body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:996;opacity:.05;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
 .wrap{max-width:720px;margin:0 auto;padding:0 22px}
@@ -98,17 +128,72 @@ section{padding:64px 0;position:relative;z-index:2}
 .reveal.in{opacity:1;transform:none}
 footer{text-align:center;padding:28px 0 50px;font-size:.78rem;opacity:.45}
 @media(max-width:520px){.gallery{gap:14px}.vwall{gap:8px}section{padding:50px 0}}
+/* Floating music player */
+#musicPlayer{position:fixed;bottom:20px;left:18px;z-index:998;display:flex;align-items:center;gap:8px;background:rgba(22,12,20,.78);border:1px solid rgba(232,166,160,.22);backdrop-filter:blur(10px);border-radius:40px;padding:7px 14px 7px 8px;box-shadow:0 8px 24px rgba(0,0,0,.45);transition:opacity .4s}
+#musicPlayer button#musicToggle{background:none;border:0;cursor:pointer;font-size:1.1rem;color:var(--blush);padding:0 2px;line-height:1;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+#musicPlayer button#musicToggle:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offset:2px}
+#musicLabel{font-family:'Caveat',cursive;font-size:1rem;color:var(--cream);opacity:.88;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ytHolder{position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;pointer-events:none}
 </style></head><body>
+<a class="skip-link" href="#main">Pular para o conteúdo</a>
 <div id="bar"></div>
 <div class="hearts" id="hearts"></div>
 
-<div id="cover">
+<div id="cover" aria-hidden="false">
   <div class="env">💌</div>
   <h2>Pra minha bobaiona</h2>
   <p>fiz uma coisa... abre devagar 🤍</p>
-  <button id="openBtn">abrir</button>
+  <button id="openBtn" aria-expanded="false" aria-controls="main">abrir</button>
 </div>
 
+<!-- Hidden YouTube player holder -->
+<div id="ytHolder"></div>
+
+<!-- Floating music player -->
+<div id="musicPlayer" style="display:none" aria-label="player de música">
+  <button id="musicToggle" aria-label="pausar música">⏸</button>
+  <span id="musicLabel"></span>
+</div>
+
+<!-- Editor UI -->
+<button id="editToggle" aria-pressed="false" title="Ativar edição" style="display:none">✎ Editar</button>
+<button id="advEditToggle" aria-pressed="false" title="Editor avançado (Notion-like)" style="display:none">≡ Blocos</button>
+<div id="editorPanel" aria-hidden="true" style="display:none">
+  <div class="editor-inner">
+    <h3>Modo de edição</h3>
+    <div class="editor-actions">
+      <button id="saveBtn">Salvar local</button>
+      <button id="loadBtn">Carregar local</button>
+      <button id="exportBtn">Exportar (.json)</button>
+      <label for="importFile" class="btn">Importar</label><input id="importFile" type="file" accept="application/json" style="display:none" />
+    </div>
+    <hr />
+    <div class="editor-add">
+      <h4>Adicionar polaroid</h4>
+      <input id="polaroidCap" placeholder="Legenda (opcional)" />
+      <input id="polaroidFile" type="file" accept="image/*" />
+      <button id="addPolaroid">Adicionar</button>
+    </div>
+    <hr />
+    <div style="font-size:.9rem">Dicas: selecione qualquer texto diretamente para editar. Use "Salvar local" e depois "Exportar" para compartilhar.</div>
+  </div>
+</div>
+
+<!-- Advanced block editor modal -->
+<div id="advEditor" aria-hidden="true" style="display:none">
+  <div class="adv-inner">
+    <header class="adv-header"><h3>Editor por blocos</h3><button id="advClose">Fechar</button></header>
+    <div class="adv-controls">
+      <select id="newBlockType"><option value="section">Seção</option><option value="heading">Título</option><option value="paragraph">Parágrafo</option><option value="polaroid">Polaroid (imagem)</option></select>
+      <input id="newBlockFile" type="file" accept="image/*" style="display:none" />
+      <button id="addBlockBtn">Adicionar bloco</button>
+      <button id="applyBlocks">Aplicar</button>
+    </div>
+    <div id="blockList"></div>
+  </div>
+</div>
+
+<main id="main" tabindex="-1">
 <header class="hero">
   <div class="kicker reveal">a história do bobaião e da bobaiona</div>
   <h1 class="reveal" style="margin-bottom: 32px;">Oi <em>moça</em><br>pfta.</h1>
@@ -289,7 +374,7 @@ footer{text-align:center;padding:28px 0 50px;font-size:.78rem;opacity:.45}
   <div class="chap-date reveal">desde o primeiro "oi moça pfta"</div>
   <div class="stats">
     <div class="stat reveal"><div class="big">12k+</div><div class="lab">mensagens trocadas</div></div>
-    <div class="stat reveal"><div class="big">13</div><div class="lab">dias pra eu virar boiola</div></div>
+    <div class="stat reveal"><div class="big">13</div><div class="lab">dias até eu virar boiola</div></div>
     <div class="stat reveal"><div class="big">6 dias</div><div class="lab">do "oi" até o primeiro te amo</div></div>
     <div class="stat reveal"><div class="big">∞</div><div class="lab">vezes que eu ri com você</div></div>
   </div>
@@ -319,19 +404,148 @@ footer{text-align:center;padding:28px 0 50px;font-size:.78rem;opacity:.45}
   <div class="sig reveal">— seu bobaião 🤍</div>
 </section>
 
+</main>
+
 <footer>feito à mão, com mídia oculta, muito te amo e zero abridor de vinho • 02/06/2026</footer>
 <script>
+// ─── Music config ───────────────────────────────────────────────────────────
+// Each entry maps a section index (0-based) to a YouTube video clip.
+// Fill in real videoId/start/end values when ready; leave array empty to
+// keep the player hidden. Examples (commented out):
+const MUSIC_CONFIG = [
+  // { sectionIndex: 0, videoId: 'dQw4w9WgXcQ', start: 43, end: 73, label: 'abertura' },
+  // { sectionIndex: 2, videoId: 'dQw4w9WgXcQ', start: 0,  end: 60, label: 'capítulo 3' },
+];
+
+// ─── YouTube IFrame Player ───────────────────────────────────────────────────
+let ytPlayer = null;
+let ytReady = false;
+let pendingPlay = null; // { videoId, start, end } to play once API is ready
+
+function onYouTubeIframeAPIReady() {
+  ytPlayer = new YT.Player('ytHolder', {
+    height: '1',
+    width: '1',
+    playerVars: { autoplay: 0, controls: 0, disablekb: 1, playsinline: 1 },
+    events: {
+      onReady: () => {
+        ytReady = true;
+        if (pendingPlay) {
+          _doPlay(pendingPlay);
+          pendingPlay = null;
+        }
+      },
+      onStateChange: (e) => {
+        // YT.PlayerState.ENDED = 0
+        if (e.data === 0) {
+          // Loop the current track if possible
+          const btn = document.getElementById('musicToggle');
+          if (btn) { btn.textContent = '▶'; btn.setAttribute('aria-label', 'tocar música'); }
+        }
+      }
+    }
+  });
+}
+
+function _doPlay({ videoId, start, end }) {
+  if (!ytPlayer || !ytReady) return;
+  ytPlayer.loadVideoById({ videoId: videoId, startSeconds: start, endSeconds: end });
+  const musicPlayer = document.getElementById('musicPlayer');
+  if (musicPlayer) musicPlayer.style.display = 'flex';
+  const btn = document.getElementById('musicToggle');
+  if (btn) { btn.textContent = '⏸'; btn.setAttribute('aria-label', 'pausar música'); }
+}
+
+function playTrackForSection(sectionIndex) {
+  if (!MUSIC_CONFIG.length) return;
+  const track = MUSIC_CONFIG.find(t => t.sectionIndex === sectionIndex);
+  if (!track) return;
+  const cfg = { videoId: track.videoId, start: track.start, end: track.end };
+  const label = document.getElementById('musicLabel');
+  if (label) label.textContent = track.label || '';
+  if (!ytReady) {
+    pendingPlay = cfg;
+  } else {
+    _doPlay(cfg);
+  }
+}
+
+function unlockAndPlay() {
+  // Triggered by first user interaction (the "abrir" click).
+  // Starts playback of section-0 track if configured.
+  playTrackForSection(0);
+}
+
+// ─── Section-aware playback via IntersectionObserver ────────────────────────
+(function() {
+  if (!MUSIC_CONFIG.length) return;
+  const sections = Array.from(document.querySelectorAll('section.wrap'));
+  if (!sections.length) return;
+  const sectionObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const idx = sections.indexOf(entry.target);
+      if (idx === -1) return;
+      playTrackForSection(idx);
+    });
+  }, { threshold: 0.4 });
+  sections.forEach(s => sectionObs.observe(s));
+})();
+
+// ─── Music toggle button ─────────────────────────────────────────────────────
+(function() {
+  const btn = document.getElementById('musicToggle');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (!ytPlayer || !ytReady) return;
+    const state = ytPlayer.getPlayerState();
+    // YT.PlayerState.PLAYING = 1
+    if (state === 1) {
+      ytPlayer.pauseVideo();
+      btn.textContent = '▶';
+      btn.setAttribute('aria-label', 'tocar música');
+    } else {
+      ytPlayer.playVideo();
+      btn.textContent = '⏸';
+      btn.setAttribute('aria-label', 'pausar música');
+    }
+  });
+})();
+
+// ─── End music player ────────────────────────────────────────────────────────
+
 const cover=document.getElementById('cover');
-document.getElementById('openBtn').addEventListener('click',()=>{ cover.classList.add('gone'); });
+const openBtn=document.getElementById('openBtn');
+openBtn.addEventListener('click',()=>{
+  cover.classList.add('gone');
+  cover.setAttribute('aria-hidden','true');
+  openBtn.setAttribute('aria-expanded','true');
+  const main=document.getElementById('main'); if(main){ main.focus(); }
+  unlockAndPlay();
+});
+
+// Video helpers: make figures focusable and ensure mobile-friendly playback
 document.querySelectorAll('[data-vid]').forEach(fig=>{
+  fig.setAttribute('tabindex','0');
   const v=fig.querySelector('video');
+  if(!v) return;
+  try{ v.muted = true; v.setAttribute('playsinline',''); v.setAttribute('preload','metadata'); }catch(e){}
   v.addEventListener('playing',()=>fig.classList.add('playing'));
   v.addEventListener('pause',()=>fig.classList.remove('playing'));
   fig.addEventListener('click',()=>{ if(v.paused){ v.play().catch(()=>{}); } else { v.pause(); } });
+  // keyboard support
+  fig.addEventListener('keydown',(ev)=>{ if(ev.key===' '||ev.key==='Enter'){ ev.preventDefault(); if(v.paused){ v.play().catch(()=>{}); } else { v.pause(); } } });
 });
-const vio=new IntersectionObserver((es)=>{es.forEach(e=>{const v=e.target.querySelector('video');
-  if(e.isIntersecting){ v.play().catch(()=>{}); } else { v.pause(); }})},{threshold:.45});
+
+const vio=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    const v=e.target.querySelector('video');
+    if(!v) return;
+    if(e.isIntersecting){ v.play().catch(()=>{}); } else { v.pause(); }
+  });
+},{threshold:.45});
 document.querySelectorAll('[data-vid]').forEach(f=>vio.observe(f));
+
 const start=new Date(2026,4,21,0,0,0);
 function tick(){
   const now=new Date();let diff=now-start;
@@ -343,14 +557,122 @@ function tick(){
   if(el)el.innerHTML=box(d,'dias')+box(h,'horas')+box(m,'min')+box(s,'seg');
 }
 setInterval(tick,1000);tick();
+
 const hc=document.getElementById('hearts');
 for(let i=0;i<16;i++){const s=document.createElement('span');s.textContent=['❤','🤍','♡'][i%3];
   s.style.left=Math.random()*100+'%';s.style.animationDelay=(Math.random()*15)+'s';
   s.style.animationDuration=(11+Math.random()*10)+'s';s.style.fontSize=(12+Math.random()*16)+'px';hc.appendChild(s);}
+
 const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')})},{threshold:.12});
 document.querySelectorAll('.reveal').forEach((el)=>io.observe(el));
+
 window.addEventListener('scroll',()=>{
-  const h=document.documentElement;const sc=h.scrollTop/(h.scrollHeight-h.clientHeight);
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  const doc = document.documentElement;
+  const sc = scrollTop / (doc.scrollHeight - doc.clientHeight) || 0;
   document.getElementById('bar').style.width=(sc*100)+'%';
 });
+  // Ensure images have sensible alt/loading attributes when missing
+  try{
+    document.querySelectorAll('.hero-photo img').forEach(img=>{
+      if(!img.hasAttribute('alt')) img.setAttribute('alt','Foto nossa');
+      if(!img.hasAttribute('loading')) img.setAttribute('loading','eager');
+    });
+    document.querySelectorAll('.polaroid img').forEach(img=>{
+      if(!img.hasAttribute('alt')) img.setAttribute('alt','');
+      if(!img.hasAttribute('loading')) img.setAttribute('loading','lazy');
+    });
+    // ensure any other large inline images are lazy-loaded
+    document.querySelectorAll('img:not([loading])').forEach(img=>img.setAttribute('loading','lazy'));
+  }catch(e){/* ignore */}
+
+// --- Inline editor functionality ---
+const editToggle=document.getElementById('editToggle');
+const editorPanel=document.getElementById('editorPanel');
+const saveBtn=document.getElementById('saveBtn');
+const loadBtn=document.getElementById('loadBtn');
+const exportBtn=document.getElementById('exportBtn');
+const importFile=document.getElementById('importFile');
+const addPolaroidBtn=document.getElementById('addPolaroid');
+const polaroidFile=document.getElementById('polaroidFile');
+const polaroidCap=document.getElementById('polaroidCap');
+
+let editMode=false;
+const editableSelectors=['.story','.chap-h','.chap-date','.pull','.kicker','.hero h1','.polaroid .cap','.menu li .dish','.menu li .tag','.stat .big','.stat .lab','.sig','.heartbeat'];
+
+function setEditable(on){
+  editableSelectors.forEach(sel=>{
+    document.querySelectorAll(sel).forEach(el=>{
+      el.contentEditable = on ? 'true' : 'false';
+      if(on) el.classList.add('editable-outline'); else el.classList.remove('editable-outline');
+    });
+  });
+}
+
+function toggleEditor(){
+  editMode = !editMode;
+  editToggle.setAttribute('aria-pressed', String(editMode));
+  editorPanel.style.display = editMode ? 'block' : 'none';
+  editorPanel.setAttribute('aria-hidden', String(!editMode));
+  setEditable(editMode);
+}
+
+// Show the toggle (visible by default)
+editToggle.style.display='block';
+editToggle.addEventListener('click',toggleEditor);
+
+function saveLocal(){
+  const main=document.getElementById('main');
+  if(!main) return alert('Conteúdo principal não encontrado');
+  localStorage.setItem('bobaiona_content', main.innerHTML);
+  alert('Salvo localmente');
+}
+
+function loadLocal(){
+  const data=localStorage.getItem('bobaiona_content');
+  if(!data) return alert('Nenhum salvamento local encontrado');
+  if(!confirm('Substituir conteúdo atual pelo salvo local?')) return;
+  document.getElementById('main').innerHTML = data;
+  location.reload();
+}
+
+function exportJSON(){
+  const main=document.getElementById('main');
+  const payload={ html: main.innerHTML, exportedAt: new Date().toISOString() };
+  const blob=new Blob([JSON.stringify(payload, null, 2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='bobaiona-export.json'; document.body.appendChild(a); a.click(); a.remove();
+}
+
+importFile.addEventListener('change',(e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=(ev)=>{
+    try{
+      const obj=JSON.parse(ev.target.result);
+      if(obj.html){ if(confirm('Importar conteúdo e recarregar?')){ document.getElementById('main').innerHTML = obj.html; location.reload(); } }
+    }catch(err){ alert('Arquivo inválido'); }
+  }; r.readAsText(f);
+});
+
+addPolaroidBtn.addEventListener('click',()=>{
+  const f=polaroidFile.files[0]; const cap=polaroidCap.value||''; if(!f) return alert('Escolha uma imagem');
+  const r=new FileReader(); r.onload=(ev)=>{
+    const url=ev.target.result;
+    const g=document.querySelector('.gallery');
+    if(!g) return alert('Galeria não encontrada');
+    const div=document.createElement('div'); div.className='polaroid reveal';
+    const img=document.createElement('img'); img.src=url; img.alt=cap||'Polaroid'; img.loading='lazy';
+    const c=document.createElement('div'); c.className='cap'; c.textContent=cap;
+    div.appendChild(img); div.appendChild(c); g.appendChild(div);
+    polaroidFile.value=''; polaroidCap.value='';
+    alert('Polaroid adicionada (salve para persistir)');
+  }; r.readAsDataURL(f);
+});
+
+saveBtn.addEventListener('click',saveLocal);
+loadBtn.addEventListener('click',loadLocal);
+exportBtn.addEventListener('click',exportJSON);
+
+// keyboard shortcut: Ctrl+E to toggle editor
+window.addEventListener('keydown',(e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); toggleEditor(); } });
+
 </script></body></html>
