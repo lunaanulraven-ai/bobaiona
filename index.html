@@ -587,6 +587,8 @@ function unlockAndPlay() {
           if (idx === -1) return;
           const track = MUSIC_CONFIG.find(t => t.sectionIndex === idx);
           if (!track) return;
+          // ignora se já é a seção atual tocando ou pausada pelo usuário
+          if (_lastSectionIdx === idx && (ytPlayer?.getPlayerState() === 1 || _userPaused)) return;
           // seção com track entrou: fade out do atual (se houver) depois toca novo
           if (_lastCfg && !_userPaused) {
             _fadeOut(800, () => { _userPaused = false; playTrackForSection(idx); });
