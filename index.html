@@ -184,6 +184,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 #blkInsertMenu.open{display:block}
 #blkInsertMenu button{display:block;width:100%;background:none;border:0;color:var(--cream);padding:6px 14px;text-align:left;cursor:pointer;font-family:'Caveat',cursive;font-size:1rem}
 #blkInsertMenu button:hover{background:rgba(232,166,160,.1)}
+#blkInsertMenu .ins-sep{display:block;padding:3px 14px;font-size:.7rem;opacity:.45;text-transform:uppercase;letter-spacing:.08em;margin-top:2px;pointer-events:none}
 /* ─── Mobile editor ──────────────────────────────────────────────────────── */
 @media(max-width:768px){
   #editToggle{padding:0;width:44px;height:44px;border-radius:50%;font-size:0;display:flex;align-items:center;justify-content:center}
@@ -1783,8 +1784,15 @@ function _showInsMenu(afterId,ev){
   const menu=document.getElementById('blkInsertMenu');
   menu.innerHTML='';
   const isChild=!!_bParent(afterId);
+  const MEDIA=new Set(['polaroid','gallery','vwall','vfeat']);
+  let didMediaSep=false;
   _BLK_TYPES.forEach(({t,l})=>{
     if(isChild&&_ROOT_TYPES.has(t)) return; // contexto filho: só tipos filhos
+    // Separador visual antes dos tipos de mídia em contexto filho
+    if(isChild&&MEDIA.has(t)&&!didMediaSep){
+      const sep=document.createElement('span');sep.className='ins-sep';sep.textContent='📸 mídia';
+      menu.appendChild(sep); didMediaSep=true;
+    }
     const btn=document.createElement('button');btn.type='button';btn.textContent=l;
     btn.addEventListener('click',()=>{menu.classList.remove('open');_insBlk(afterId,t);});
     menu.appendChild(btn);
