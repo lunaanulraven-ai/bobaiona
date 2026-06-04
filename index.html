@@ -8,6 +8,7 @@
   <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
   <title>Pra minha bobaiona 🤍</title>
   <script src="https://www.youtube.com/iframe_api"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Caveat:wght@500;700&family=Spectral:ital,wght@0,300;0,400;1,400&display=swap' rel='stylesheet'><style>
 :root{
   --bg:#160c14; --bg2:#241320; --plum:#37192b;
@@ -146,6 +147,14 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 .theme-btn{font-family:'Caveat',cursive;font-size:.95rem;background:var(--blush);color:#fff;border:0;padding:5px 10px;border-radius:20px;cursor:pointer;transition:opacity .2s}
 .theme-btn:hover{opacity:.85}
 .theme-btn.active-theme{outline:2px solid var(--gold);outline-offset:2px}
+/* Friendly editor v3 */
+.editor-save-btn{width:100%;padding:10px;background:var(--rose);color:#fff;border:0;border-radius:10px;font-family:'Caveat',cursive;font-size:1.2rem;cursor:pointer;margin-bottom:8px}
+.editor-save-btn:hover{opacity:.88}
+#syncStatus{display:block;font-family:'Caveat',cursive;font-size:.95rem;text-align:center;color:var(--gold);min-height:1.2em;margin-bottom:4px}
+#editorPanel input[type="number"]{width:50%;display:inline-block}
+#editorPanel select{width:100%;background:rgba(255,255,255,.07);color:var(--cream);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:5px 8px;font-size:.9rem}
+#editorPanel details summary{font-size:.8rem;opacity:.55;cursor:pointer;padding:4px 0}
+#editorPanel details>div{margin-top:6px;display:flex;flex-direction:column;gap:6px}
 </style></head><body>
 <a class="skip-link" href="#main">Pular para o conteúdo</a>
 <div id="bar"></div>
@@ -172,27 +181,43 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 <button id="advEditToggle" aria-pressed="false" title="Editor avançado (Notion-like)" style="display:none">≡ Blocos</button>
 <div id="editorPanel" aria-hidden="true" style="display:none">
   <div class="editor-inner">
-    <h3>Modo de edição</h3>
-    <div class="editor-actions">
-      <button id="saveBtn">Salvar local</button>
-      <button id="loadBtn">Carregar local</button>
-      <button id="exportBtn">Exportar (.json)</button>
-      <label for="importFile" class="btn">Importar</label><input id="importFile" type="file" accept="application/json" style="display:none" />
-    </div>
+    <h3>✏️ editar página</h3>
+    <p style="font-size:.85rem;opacity:.7;margin-bottom:8px">toque em qualquer texto pra editar direto 🤍</p>
+    <button id="saveBtn" class="editor-save-btn">💾 salvar tudo</button>
+    <span id="syncStatus"></span>
     <hr />
-    <div class="editor-add">
-      <h4>Adicionar polaroid</h4>
-      <input id="polaroidCap" placeholder="Legenda (opcional)" />
+    <div class="editor-section">
+      <h4>📸 adicionar foto</h4>
+      <input id="polaroidCap" placeholder="legenda (opcional)" />
       <input id="polaroidFile" type="file" accept="image/*" />
-      <button id="addPolaroid">Adicionar</button>
+      <button id="addPolaroid">adicionar foto</button>
     </div>
     <hr />
     <div class="editor-section">
-      <h4>Escolher clima 🎨</h4>
+      <h4>🎵 música do capítulo</h4>
+      <p style="font-size:.8rem;opacity:.65;margin-bottom:4px">cole o link do YouTube e escolha o trecho</p>
+      <input id="musicUrl" placeholder="link do YouTube (ex: youtube.com/watch?v=...)" />
+      <div style="display:flex;gap:6px;margin:4px 0">
+        <input id="musicStart" type="number" placeholder="começa em (seg)" min="0" style="flex:1" />
+        <input id="musicEnd" type="number" placeholder="termina em (seg)" min="0" style="flex:1" />
+      </div>
+      <select id="musicSection" aria-label="capítulo"></select>
+      <button id="saveMusicBtn">salvar música</button>
+    </div>
+    <hr />
+    <div class="editor-section">
+      <h4>🎨 clima da página</h4>
       <div id="themePicker"></div>
     </div>
     <hr />
-    <div style="font-size:.9rem">Dicas: selecione qualquer texto diretamente para editar. Use "Salvar local" e depois "Exportar" para compartilhar.</div>
+    <details>
+      <summary>··· recursos avançados</summary>
+      <div>
+        <button id="exportBtn">exportar JSON</button>
+        <button id="loadBtn">carregar salvo local</button>
+        <label for="importFile" class="btn">importar JSON</label><input id="importFile" type="file" accept="application/json" style="display:none" />
+      </div>
+    </details>
   </div>
 </div>
 
@@ -429,14 +454,24 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 
 <footer>feito à mão, com mídia oculta, muito te amo e zero abridor de vinho • 02/06/2026</footer>
 <script>
-// ─── Music config ───────────────────────────────────────────────────────────
-// Each entry maps a section index (0-based) to a YouTube video clip.
-// Fill in real videoId/start/end values when ready; leave array empty to
-// keep the player hidden. Examples (commented out):
-const MUSIC_CONFIG = [
-  // { sectionIndex: 0, videoId: 'dQw4w9WgXcQ', start: 43, end: 73, label: 'abertura' },
-  // { sectionIndex: 2, videoId: 'dQw4w9WgXcQ', start: 0,  end: 60, label: 'capítulo 3' },
-];
+// ─── Config (preencha após criar o projeto no Supabase) ──────────────────────
+const SUPABASE_URL      = '';  // ex: https://xyzxyz.supabase.co
+const SUPABASE_ANON_KEY = '';  // anon/public key do projeto
+const EDIT_PASSWORD     = 'bobaiona'; // troque por uma senha sua
+
+let _supa = null;
+if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  try { _supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
+}
+let _editAuth = false;
+
+// ─── Music config (salvo por versão no localStorage / Supabase) ──────────────
+let MUSIC_CONFIG = (function() {
+  try {
+    const ver = localStorage.getItem('bobaiona_version') || 'caze';
+    return JSON.parse(localStorage.getItem('bobaiona_music_' + ver) || '[]');
+  } catch(e) { return []; }
+})();
 
 // ─── YouTube IFrame Player ───────────────────────────────────────────────────
 let ytPlayer = null;
@@ -549,6 +584,20 @@ openBtn.addEventListener('click',()=>{
   openBtn.setAttribute('aria-expanded','true');
   const main=document.getElementById('main'); if(main){ main.focus(); }
   unlockAndPlay();
+  // Load fresh content from Supabase (non-blocking)
+  supaLoad(currentVersion).then(data => {
+    if (!data || !data.html) return;
+    const mainEl = document.getElementById('main');
+    mainEl.innerHTML = data.html;
+    _reobserve();
+    _markActiveVersionBtn();
+    _buildThemePicker();
+    if (data.theme) applyTheme(data.theme);
+    if (data.music) {
+      MUSIC_CONFIG = data.music;
+      localStorage.setItem('bobaiona_music_' + currentVersion, JSON.stringify(data.music));
+    }
+  });
 });
 
 // Video helpers: make figures focusable and ensure mobile-friendly playback
@@ -592,6 +641,10 @@ for(let i=0;i<16;i++){const s=document.createElement('span');s.textContent=['❤
 
 const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')})},{threshold:.12});
 document.querySelectorAll('.reveal').forEach((el)=>io.observe(el));
+
+function _reobserve() {
+  document.querySelectorAll('.reveal:not(.in)').forEach(el => io.observe(el));
+}
 
 window.addEventListener('scroll',()=>{
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -637,11 +690,17 @@ function setEditable(on){
 }
 
 function toggleEditor(){
+  if (!editMode && !_editAuth) {
+    const pwd = prompt('senha pra editar 🔑');
+    if (pwd !== EDIT_PASSWORD) { alert('senha errada 🙈'); return; }
+    _editAuth = true;
+  }
   editMode = !editMode;
   editToggle.setAttribute('aria-pressed', String(editMode));
   editorPanel.style.display = editMode ? 'block' : 'none';
   editorPanel.setAttribute('aria-hidden', String(!editMode));
   setEditable(editMode);
+  if (editMode) _buildMusicSectionSelect();
 }
 
 // Show the toggle (visible by default)
@@ -670,6 +729,37 @@ function exportJSON(){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='bobaiona-export.json'; document.body.appendChild(a); a.click(); a.remove();
 }
 
+// ─── Supabase sync ────────────────────────────────────────────────────────────
+async function supaLoad(ver) {
+  if (!_supa) return null;
+  try {
+    const { data } = await _supa.from('paginas').select('conteudo').eq('id', ver).single();
+    return data?.conteudo || null;
+  } catch(e) { return null; }
+}
+
+async function supaSave(ver, payload) {
+  if (!_supa) return false;
+  try {
+    const { error } = await _supa.from('paginas').upsert({ id: ver, conteudo: payload, atualizado_em: new Date().toISOString() });
+    return !error;
+  } catch(e) { return false; }
+}
+
+async function saveAll() {
+  const mainEl = document.getElementById('main');
+  const theme = localStorage.getItem('bobaiona_theme_' + currentVersion) || 'padrao';
+  localStorage.setItem('bobaiona_content_' + currentVersion, mainEl.innerHTML);
+  localStorage.setItem('bobaiona_music_' + currentVersion, JSON.stringify(MUSIC_CONFIG));
+  const status = document.getElementById('syncStatus');
+  if (status) status.textContent = 'salvando...';
+  const ok = await supaSave(currentVersion, { html: mainEl.innerHTML, theme, music: MUSIC_CONFIG });
+  if (status) {
+    status.textContent = ok ? '☁️ sincronizado!' : '💾 salvo aqui (sem rede)';
+    setTimeout(() => { if(status) status.textContent = ''; }, 3000);
+  }
+}
+
 importFile.addEventListener('change',(e)=>{
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader(); r.onload=(ev)=>{
@@ -695,7 +785,7 @@ addPolaroidBtn.addEventListener('click',()=>{
   }; r.readAsDataURL(f);
 });
 
-saveBtn.addEventListener('click',saveLocal);
+saveBtn.addEventListener('click',saveAll);
 loadBtn.addEventListener('click',loadLocal);
 exportBtn.addEventListener('click',exportJSON);
 
@@ -743,7 +833,10 @@ function switchVersion(ver) {
   const saved = localStorage.getItem('bobaiona_content_' + currentVersion);
   if (saved) {
     mainEl.innerHTML = saved;
+    _reobserve();
   }
+  // reload music config for new version
+  try { MUSIC_CONFIG = JSON.parse(localStorage.getItem('bobaiona_music_' + currentVersion) || '[]'); } catch(e) { MUSIC_CONFIG = []; }
   // update active button (buttons may have been replaced by innerHTML swap, so query fresh)
   _markActiveVersionBtn();
   // apply this version's theme
@@ -791,11 +884,58 @@ document.getElementById('main').addEventListener('click', (e) => {
   if (savedContent) {
     const mainEl = document.getElementById('main');
     mainEl.innerHTML = savedContent;
+    _reobserve();
     _markActiveVersionBtn();
     _buildThemePicker();
   } else {
     _buildThemePicker();
   }
+})();
+
+// ─── Music editor helpers ─────────────────────────────────────────────────────
+function _buildMusicSectionSelect() {
+  const sel = document.getElementById('musicSection');
+  if (!sel) return;
+  sel.innerHTML = '';
+  document.querySelectorAll('section.wrap').forEach((sec, i) => {
+    const title = sec.querySelector('.chap-h')?.textContent?.trim() || ('seção ' + (i+1));
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = (i+1) + '. ' + title;
+    sel.appendChild(opt);
+  });
+}
+
+function _extractYtId(url) {
+  try {
+    const u = new URL(url.includes('://') ? url : 'https://' + url);
+    if (u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('?')[0];
+    return u.searchParams.get('v') || '';
+  } catch(e) {
+    const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : '';
+  }
+}
+
+(function() {
+  const btn = document.getElementById('saveMusicBtn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const url   = document.getElementById('musicUrl')?.value?.trim() || '';
+    const start = parseInt(document.getElementById('musicStart')?.value || '0') || 0;
+    const end   = parseInt(document.getElementById('musicEnd')?.value  || '0') || 0;
+    const idx   = parseInt(document.getElementById('musicSection')?.value || '0');
+    if (!url) { alert('cole um link do YouTube 🎵'); return; }
+    const videoId = _extractYtId(url);
+    if (!videoId) { alert('link inválido 🙈 — usa o link completo do vídeo'); return; }
+    const sections = document.querySelectorAll('section.wrap');
+    const label = sections[idx]?.querySelector('.chap-h')?.textContent?.trim() || ('seção ' + (idx+1));
+    const entry = { sectionIndex: idx, videoId, start, end, label };
+    const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === idx);
+    if (pos >= 0) { MUSIC_CONFIG[pos] = entry; } else { MUSIC_CONFIG.push(entry); }
+    localStorage.setItem('bobaiona_music_' + currentVersion, JSON.stringify(MUSIC_CONFIG));
+    alert('música salva 🎵 — clique em "salvar tudo" pra sincronizar com o outro aparelho');
+  });
 })();
 
 // keyboard shortcut: Ctrl+E to toggle editor
