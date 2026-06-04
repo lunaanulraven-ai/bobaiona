@@ -203,6 +203,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
   #blkSheet .bs-tab{font-size:1.1rem;padding:10px 0}
   #blkPanel h3{font-family:'Caveat',cursive;font-size:1.3rem;color:var(--gold);margin-bottom:12px}
   .blk-tb button{font-size:1rem;padding:6px 10px}
+  body.edit-mode-mobile #musicPlayer{bottom:76px}
 }
 /* Bottom sheet */
 #blkSheet{position:fixed;bottom:0;left:0;right:0;z-index:1350;background:rgba(16,7,14,.97);border-top:1px solid rgba(232,166,160,.22);border-radius:18px 18px 0 0;max-height:85vh;display:none;flex-direction:column;overflow:hidden}
@@ -822,6 +823,7 @@ function toggleEditor(){
       msb.appendChild(exitB);
       msb.style.display = 'flex';
     }
+    if (_isMobile()) document.body.classList.add('edit-mode-mobile');
     main.classList.add('edit-mode');
     _buildMusicSectionSelect();
     _rebuildToolbars();
@@ -829,6 +831,7 @@ function toggleEditor(){
     editorPanel.style.display = 'none';
     editorPanel.setAttribute('aria-hidden', 'true');
     if (msb) { msb.style.display = 'none'; msb.innerHTML = ''; }
+    document.body.classList.remove('edit-mode-mobile');
     main.classList.remove('edit-mode');
     document.querySelectorAll('.blk-tb').forEach(t=>t.remove());
     document.querySelectorAll('[data-block-id]').forEach(el=>{el.removeAttribute('draggable');el.classList.remove('blk-sel');});
@@ -1590,13 +1593,22 @@ function _insBlk(afterId,type){
     }
   }
   _reRender();
-  _openPanel(nb.id);
-  // Auto-abre seletor de arquivo em blocos de foto
-  if(type==='polaroid'||type==='gallery'){
-    requestAnimationFrame(()=>{
-      const fi=document.getElementById('blkPanel')?.querySelector('input[type="file"]');
-      if(fi) fi.click();
-    });
+  if(_isMobile()){
+    _openSheet(nb.id);
+    if(type==='polaroid'||type==='gallery'){
+      requestAnimationFrame(()=>{
+        const fi=document.getElementById('blkSheet')?.querySelector('input[type="file"]');
+        if(fi) fi.click();
+      });
+    }
+  } else {
+    _openPanel(nb.id);
+    if(type==='polaroid'||type==='gallery'){
+      requestAnimationFrame(()=>{
+        const fi=document.getElementById('blkPanel')?.querySelector('input[type="file"]');
+        if(fi) fi.click();
+      });
+    }
   }
 }
 
@@ -1981,14 +1993,15 @@ function _openSheet(id){
     }
   };
 
-  [{id:'edit',l:'✏️ editar'},{id:'music',l:'🎵 música'},{id:'add',l:'+ adicionar'}].forEach(({id:tid,l})=>{
+  const _noMusicTab=blk.type==='hero'||blk.type==='finale';
+  [{id:'edit',l:'✏️ editar'},...(_noMusicTab?[]:[{id:'music',l:'🎵 música'}]),{id:'add',l:'+ adicionar'}].forEach(({id:tid,l})=>{
     const btn=document.createElement('button'); btn.className='bs-tab'; btn.dataset.tab=tid; btn.textContent=l;
     btn.addEventListener('click',()=>renderTab(tid));
     tabBar.appendChild(btn);
   });
 
   sheet.appendChild(tabBar); sheet.appendChild(tabBody);
-  renderTab(isChapter?'music':'edit');
+  renderTab((isChapter&&!_noMusicTab)?'music':'edit');
 
   // Fecha ao tocar fora
   const closeOut=ev=>{
