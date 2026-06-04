@@ -649,18 +649,6 @@ openBtn.addEventListener('click',()=>{
 });
 
 // Video helpers: make figures focusable and ensure mobile-friendly playback
-document.querySelectorAll('[data-vid]').forEach(fig=>{
-  fig.setAttribute('tabindex','0');
-  const v=fig.querySelector('video');
-  if(!v) return;
-  try{ v.muted = true; v.setAttribute('playsinline',''); v.setAttribute('preload','metadata'); }catch(e){}
-  v.addEventListener('playing',()=>fig.classList.add('playing'));
-  v.addEventListener('pause',()=>fig.classList.remove('playing'));
-  fig.addEventListener('click',()=>{ if(v.paused){ v.play().catch(()=>{}); } else { v.pause(); } });
-  // keyboard support
-  fig.addEventListener('keydown',(ev)=>{ if(ev.key===' '||ev.key==='Enter'){ ev.preventDefault(); if(v.paused){ v.play().catch(()=>{}); } else { v.pause(); } } });
-});
-
 const vio=new IntersectionObserver((entries)=>{
   entries.forEach(e=>{
     const v=e.target.querySelector('video');
@@ -668,7 +656,23 @@ const vio=new IntersectionObserver((entries)=>{
     if(e.isIntersecting){ v.play().catch(()=>{}); } else { v.pause(); }
   });
 },{threshold:.45});
-document.querySelectorAll('[data-vid]').forEach(f=>vio.observe(f));
+
+function _initVideoDOM() {
+  document.querySelectorAll('[data-vid]').forEach(fig=>{
+    if(fig.dataset.vidInit) return;
+    fig.dataset.vidInit='1';
+    fig.setAttribute('tabindex','0');
+    const v=fig.querySelector('video');
+    if(!v) return;
+    try{ v.muted=true; v.setAttribute('playsinline',''); v.setAttribute('preload','metadata'); }catch(e){}
+    v.addEventListener('playing',()=>fig.classList.add('playing'));
+    v.addEventListener('pause',()=>fig.classList.remove('playing'));
+    fig.addEventListener('click',()=>{ if(v.paused){ v.play().catch(()=>{}); } else { v.pause(); } });
+    fig.addEventListener('keydown',(ev)=>{ if(ev.key===' '||ev.key==='Enter'){ ev.preventDefault(); if(v.paused){ v.play().catch(()=>{}); } else { v.pause(); } } });
+    vio.observe(fig);
+  });
+}
+_initVideoDOM();
 
 const start=new Date(2026,4,21,0,0,0);
 function tick(){
@@ -1077,6 +1081,229 @@ function _extractYtId(url) {
     alert('música removida 🎵 — clique em "salvar tudo" pra sincronizar');
   });
 })();
+
+// ─── Block system ────────────────────────────────────────────────────────────
+let _blocks = [];
+
+function _esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function parsePageToBlocks() {
+  const blk = []; let n = 0;
+  const uid = (t) => t + '-' + (++n);
+  const main = document.getElementById('main');
+
+  const hero = main.querySelector('header.hero');
+  if (hero) blk.push({ id: uid('hero'), type: 'hero', data: {
+    kicker:   hero.querySelector('.kicker')?.innerHTML || '',
+    h1:       hero.querySelector('h1')?.innerHTML || '',
+    sub:      hero.querySelector('.sub')?.innerHTML || '',
+    photoSrc: hero.querySelector('.hero-photo img')?.getAttribute('src') || '',
+    photoCap: hero.querySelector('.hero-photo .cap')?.innerHTML || ''
+  }});
+
+  main.querySelectorAll('section.wrap').forEach(sec => {
+    if (sec.classList.contains('finale')) {
+      blk.push({ id: uid('finale'), type: 'finale', data: {
+        chapNo:    sec.querySelector('.chap-no')?.innerHTML || '',
+        big:       sec.querySelector('.big')?.innerHTML || '',
+        story:     sec.querySelector('.story')?.innerHTML || '',
+        heartbeat: sec.querySelector('.heartbeat')?.innerHTML || '',
+        sig:       sec.querySelector('.sig')?.innerHTML || ''
+      }});
+      return;
+    }
+
+    const chapNo = sec.querySelector(':scope > .chap-no');
+    const chapH  = sec.querySelector(':scope > .chap-h');
+    const chapDt = sec.querySelector(':scope > .chap-date');
+    if (chapNo || chapH) blk.push({ id: uid('chap'), type: 'chapter', data: {
+      number: chapNo?.innerHTML || '',
+      title:  chapH?.innerHTML  || '',
+      date:   chapDt?.innerHTML || ''
+    }});
+
+    Array.from(sec.children).forEach(el => {
+      if (el.matches('.chap-no,.chap-h,.chap-date')) return;
+
+      if (el.matches('.story')) { blk.push({ id: uid('story'), type: 'story', data: { html: el.innerHTML } }); return; }
+      if (el.matches('.pull'))  { blk.push({ id: uid('pull'),  type: 'pull',  data: { html: el.innerHTML } }); return; }
+      if (el.matches('.note'))  { blk.push({ id: uid('note'),  type: 'note',  data: { html: el.innerHTML } }); return; }
+
+      if (el.matches('.chat')) {
+        const head = el.querySelector('.head');
+        const whoEl = head?.querySelector('.who');
+        const whoTxt = Array.from(whoEl?.childNodes||[]).filter(n=>n.nodeType===3).map(n=>n.textContent.trim()).filter(Boolean).join('');
+        blk.push({ id: uid('chat'), type: 'chat', data: {
+          head: { ava: head?.querySelector('.ava')?.innerHTML||'', who: whoTxt, time: head?.querySelector('small')?.textContent||'' },
+          messages: Array.from(el.querySelectorAll('.brow')).map(brow => {
+            const side=brow.classList.contains('him')?'him':'her';
+            const bub=brow.querySelector('.bubble');
+            const tm=bub?.querySelector('.time');
+            const txt=bub?Array.from(bub.childNodes).filter(n=>!(n.nodeType===1&&n.classList?.contains('time'))).map(n=>n.textContent).join('').trim():'';
+            return { side, text: txt, time: tm?.textContent||'' };
+          })
+        }});
+        // .note misplaced as child of .chat due to unclosed div in source HTML
+        const nested = Array.from(el.children).find(c=>c.classList.contains('note'));
+        if (nested) blk.push({ id: uid('note'), type: 'note', data: { html: nested.innerHTML } });
+        return;
+      }
+
+      if (el.matches('.gallery')) {
+        blk.push({ id: uid('gal'), type: 'gallery', data: { items: Array.from(el.querySelectorAll('.polaroid')).map(p=>({
+          src: p.querySelector('img')?.getAttribute('src')||'', cap: p.querySelector('.cap')?.innerHTML||'',
+          wide: p.classList.contains('wide'), span2: p.classList.contains('span2')
+        })) }});
+        return;
+      }
+
+      if (el.matches('.vwall')) {
+        blk.push({ id: uid('vw'), type: 'vwall', data: { items: Array.from(el.querySelectorAll('.vid')).map(v=>({
+          src: v.querySelector('video')?.getAttribute('src')||'',
+          poster: v.querySelector('video')?.getAttribute('poster')||'',
+          cap: v.querySelector('figcaption')?.innerHTML||''
+        })) }});
+        return;
+      }
+
+      if (el.matches('.vfeat')) {
+        const v=el.querySelector('video');
+        blk.push({ id: uid('vf'), type: 'vfeat', data: {
+          src: v?.getAttribute('src')||'', poster: v?.getAttribute('poster')||'',
+          cap: el.querySelector('figcaption')?.innerHTML||''
+        }});
+        return;
+      }
+
+      if (el.matches('.polaroid')) {
+        blk.push({ id: uid('pol'), type: 'polaroid', data: {
+          src: el.querySelector('img')?.getAttribute('src')||'', cap: el.querySelector('.cap')?.innerHTML||'',
+          wide: el.classList.contains('wide'), span2: el.classList.contains('span2')
+        }});
+        return;
+      }
+
+      if (el.matches('.stats')) {
+        blk.push({ id: uid('stats'), type: 'stats', data: { items: Array.from(el.querySelectorAll('.stat')).map(s=>({
+          big: s.querySelector('.big')?.innerHTML||'', lab: s.querySelector('.lab')?.innerHTML||''
+        })) }});
+        return;
+      }
+
+      if (el.matches('.menu')) {
+        blk.push({ id: uid('menu'), type: 'menu', data: { items: Array.from(el.querySelectorAll('li')).map(li=>({
+          dish: li.querySelector('.dish')?.innerHTML||'', tag: li.querySelector('.tag')?.innerHTML||''
+        })) }});
+        return;
+      }
+    });
+  });
+
+  return blk;
+}
+
+function _blockEl(b) {
+  const { type: t, data: d } = b;
+  let el;
+  if (t==='story')  { el=document.createElement('p');   el.className='story reveal';  el.innerHTML=d.html; }
+  else if (t==='pull')  { el=document.createElement('div'); el.className='pull reveal';   el.innerHTML=d.html; }
+  else if (t==='note')  { el=document.createElement('div'); el.className='note reveal';   el.innerHTML=d.html; }
+  else if (t==='chat') {
+    el=document.createElement('div'); el.className='chat reveal';
+    el.innerHTML=
+      `<div class="head"><div class="ava">${d.head.ava}</div><div class="who">${_esc(d.head.who)}<small>${_esc(d.head.time)}</small></div></div>`+
+      d.messages.map(m=>`<div class="brow ${m.side}"><div class="bubble ${m.side}">${_esc(m.text)}<span class="time">${_esc(m.time)}</span></div></div>`).join('');
+  }
+  else if (t==='gallery') {
+    el=document.createElement('div'); el.className='gallery';
+    el.innerHTML=d.items.map(i=>{
+      const c='polaroid reveal'+(i.span2?' span2':'')+(i.wide?' wide':'');
+      return `<div class="${c}"><img src="${_esc(i.src)}" alt="${_esc(i.cap)}" loading="lazy"><div class="cap">${i.cap}</div></div>`;
+    }).join('');
+  }
+  else if (t==='polaroid') {
+    el=document.createElement('div');
+    el.className='polaroid reveal'+(d.span2?' span2':'')+(d.wide?' wide':'');
+    el.innerHTML=`<img src="${_esc(d.src)}" alt="" loading="lazy"><div class="cap">${d.cap}</div>`;
+  }
+  else if (t==='vwall') {
+    el=document.createElement('div'); el.className='vwall';
+    el.innerHTML=d.items.map(i=>`<figure class="vid reveal" data-vid><video src="${_esc(i.src)}" poster="${_esc(i.poster)}" muted loop playsinline preload="metadata"></video><div class="playbtn">▶</div><figcaption>${i.cap}</figcaption></figure>`).join('');
+  }
+  else if (t==='vfeat') {
+    el=document.createElement('figure'); el.className='vfeat reveal'; el.setAttribute('data-vid','');
+    el.innerHTML=`<video src="${_esc(d.src)}" poster="${_esc(d.poster)}" muted loop playsinline preload="metadata"></video><div class="playbtn">▶</div><figcaption>${d.cap}</figcaption>`;
+  }
+  else if (t==='stats') {
+    el=document.createElement('div'); el.className='stats';
+    el.innerHTML=d.items.map(i=>`<div class="stat reveal"><div class="big">${i.big}</div><div class="lab">${i.lab}</div></div>`).join('');
+  }
+  else if (t==='menu') {
+    el=document.createElement('ul'); el.className='menu reveal';
+    el.innerHTML=d.items.map(i=>`<li><span class="dish">${i.dish}</span><span class="tag">${i.tag}</span></li>`).join('');
+  }
+  return el||null;
+}
+
+function renderBlocks(blocks) {
+  const main=document.getElementById('main');
+  const vbar=document.getElementById('versionBar');
+  Array.from(main.children).forEach(c=>{ if(c!==vbar) c.remove(); });
+
+  let sec=null;
+  blocks.forEach(b => {
+    if (b.type==='hero') {
+      const h=document.createElement('header'); h.className='hero';
+      h.innerHTML=
+        `<div class="kicker reveal">${b.data.kicker}</div>`+
+        `<h1 class="reveal" style="margin-bottom:32px">${b.data.h1}</h1>`+
+        `<div class="hero-photo reveal"><img src="${_esc(b.data.photoSrc)}" alt="a gente" loading="eager"><div class="cap">${b.data.photoCap}</div></div>`+
+        `<p class="sub reveal">${b.data.sub}</p>`+
+        `<div class="counter reveal" id="counter"></div>`+
+        `<div class="scroll-cue">desce que tem história ↓</div>`;
+      main.appendChild(h); sec=null; return;
+    }
+    if (b.type==='chapter') {
+      sec=document.createElement('section'); sec.className='wrap';
+      sec.innerHTML=
+        `<span class="chap-no reveal">${b.data.number}</span>`+
+        `<h2 class="chap-h reveal">${b.data.title}</h2>`+
+        (b.data.date?`<div class="chap-date reveal">${b.data.date}</div>`:'');
+      main.appendChild(sec); return;
+    }
+    if (b.type==='finale') {
+      const s=document.createElement('section'); s.className='wrap finale';
+      s.innerHTML=
+        `<span class="chap-no reveal">${b.data.chapNo}</span>`+
+        `<p class="big reveal">${b.data.big}</p>`+
+        `<p class="story reveal" style="max-width:60ch;margin:0 auto">${b.data.story}</p>`+
+        `<div class="heartbeat reveal">${b.data.heartbeat}</div>`+
+        `<div class="sig reveal">${b.data.sig}</div>`;
+      main.appendChild(s); sec=null; return;
+    }
+    if (!sec) return;
+    const el=_blockEl(b);
+    if (el) sec.appendChild(el);
+  });
+}
+
+function _reinitDOM() {
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  _initVideoDOM();
+}
+
+async function initBlocks() {
+  let blocks=null;
+  const supaData=await supaLoad(currentVersion);
+  if (supaData?.blocks?.length) blocks=supaData.blocks;
+  if (!blocks) blocks=parsePageToBlocks();
+  _blocks=blocks;
+  renderBlocks(_blocks);
+  _reinitDOM();
+}
+initBlocks();
 
 // keyboard shortcut: Ctrl+E to toggle editor
 window.addEventListener('keydown',(e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); toggleEditor(); } });
