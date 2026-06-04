@@ -421,6 +421,7 @@ const MUSIC_CONFIG = [
 let ytPlayer = null;
 let ytReady = false;
 let pendingPlay = null; // { videoId, start, end } to play once API is ready
+let _lastCfg = null;
 
 function onYouTubeIframeAPIReady() {
   ytPlayer = new YT.Player('ytHolder', {
@@ -438,9 +439,12 @@ function onYouTubeIframeAPIReady() {
       onStateChange: (e) => {
         // YT.PlayerState.ENDED = 0
         if (e.data === 0) {
-          // Loop the current track if possible
-          const btn = document.getElementById('musicToggle');
-          if (btn) { btn.textContent = '▶'; btn.setAttribute('aria-label', 'tocar música'); }
+          if (_lastCfg) {
+            _doPlay(_lastCfg);
+          } else {
+            const btn = document.getElementById('musicToggle');
+            if (btn) { btn.textContent = '▶'; btn.setAttribute('aria-label', 'tocar música'); }
+          }
         }
       }
     }
@@ -449,6 +453,7 @@ function onYouTubeIframeAPIReady() {
 
 function _doPlay({ videoId, start, end }) {
   if (!ytPlayer || !ytReady) return;
+  _lastCfg = { videoId, start, end };
   ytPlayer.loadVideoById({ videoId: videoId, startSeconds: start, endSeconds: end });
   const musicPlayer = document.getElementById('musicPlayer');
   if (musicPlayer) musicPlayer.style.display = 'flex';
@@ -474,23 +479,24 @@ function unlockAndPlay() {
   // Triggered by first user interaction (the "abrir" click).
   // Starts playback of section-0 track if configured.
   playTrackForSection(0);
-}
 
-// ─── Section-aware playback via IntersectionObserver ────────────────────────
-(function() {
-  if (!MUSIC_CONFIG.length) return;
-  const sections = Array.from(document.querySelectorAll('section.wrap'));
-  if (!sections.length) return;
-  const sectionObs = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const idx = sections.indexOf(entry.target);
-      if (idx === -1) return;
-      playTrackForSection(idx);
-    });
-  }, { threshold: 0.4 });
-  sections.forEach(s => sectionObs.observe(s));
-})();
+  // ─── Section-aware playback via IntersectionObserver ──────────────────────
+  // Registered here (after user interaction) to avoid firing before "abrir".
+  if (MUSIC_CONFIG.length) {
+    const sections = Array.from(document.querySelectorAll('section.wrap'));
+    if (sections.length) {
+      const sectionObs = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const idx = sections.indexOf(entry.target);
+          if (idx === -1) return;
+          playTrackForSection(idx);
+        });
+      }, { threshold: 0.4 });
+      sections.forEach(s => sectionObs.observe(s));
+    }
+  }
+}
 
 // ─── Music toggle button ─────────────────────────────────────────────────────
 (function() {
