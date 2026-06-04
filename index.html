@@ -472,8 +472,43 @@ let MUSIC_CONFIG = (function() {
 // ─── YouTube IFrame Player ───────────────────────────────────────────────────
 let ytPlayer = null;
 let ytReady = false;
-let pendingPlay = null; // { videoId, start, end } to play once API is ready
+let pendingPlay = null;
 let _lastCfg = null;
+let _lastSectionIdx = -1;
+let _userPaused = false;
+let _fadeTimer = null;
+
+function _cancelFade() {
+  if (_fadeTimer !== null) { clearInterval(_fadeTimer); _fadeTimer = null; }
+}
+
+function _fadeIn(targetVol, durationMs) {
+  _cancelFade();
+  if (!ytPlayer || !ytReady) return;
+  ytPlayer.setVolume(0);
+  const steps = Math.max(1, Math.round(durationMs / 50));
+  const inc = targetVol / steps;
+  let cur = 0;
+  _fadeTimer = setInterval(() => {
+    cur += inc;
+    if (cur >= targetVol) { ytPlayer.setVolume(targetVol); _cancelFade(); }
+    else { ytPlayer.setVolume(Math.round(cur)); }
+  }, 50);
+}
+
+function _fadeOut(durationMs, callback) {
+  _cancelFade();
+  if (!ytPlayer || !ytReady) { if (callback) callback(); return; }
+  const startVol = ytPlayer.getVolume();
+  const steps = Math.max(1, Math.round(durationMs / 50));
+  const dec = startVol / steps;
+  let cur = startVol;
+  _fadeTimer = setInterval(() => {
+    cur -= dec;
+    if (cur <= 0) { ytPlayer.setVolume(0); _cancelFade(); if (callback) callback(); }
+    else { ytPlayer.setVolume(Math.round(cur)); }
+  }, 50);
+}
 
 function onYouTubeIframeAPIReady() {
   ytPlayer = new YT.Player('ytHolder', {
@@ -491,8 +526,9 @@ function onYouTubeIframeAPIReady() {
       onStateChange: (e) => {
         // YT.PlayerState.ENDED = 0
         if (e.data === 0) {
-          if (_lastCfg) {
-            _doPlay(_lastCfg);
+          if (_lastCfg && !_userPaused) {
+            const cfg = _lastCfg;
+            _fadeOut(800, () => { if (!_userPaused) _doPlay(cfg); });
           } else {
             const btn = document.getElementById('musicToggle');
             if (btn) { btn.textContent = '▶'; btn.setAttribute('aria-label', 'tocar música'); }
@@ -505,18 +541,22 @@ function onYouTubeIframeAPIReady() {
 
 function _doPlay({ videoId, start, end }) {
   if (!ytPlayer || !ytReady) return;
+  _cancelFade();
   _lastCfg = { videoId, start, end };
+  ytPlayer.setVolume(0);
   ytPlayer.loadVideoById({ videoId: videoId, startSeconds: start, endSeconds: end });
   const musicPlayer = document.getElementById('musicPlayer');
   if (musicPlayer) musicPlayer.style.display = 'flex';
   const btn = document.getElementById('musicToggle');
   if (btn) { btn.textContent = '⏸'; btn.setAttribute('aria-label', 'pausar música'); }
+  _fadeIn(100, 1500);
 }
 
 function playTrackForSection(sectionIndex) {
   if (!MUSIC_CONFIG.length) return;
   const track = MUSIC_CONFIG.find(t => t.sectionIndex === sectionIndex);
   if (!track) return;
+  _lastSectionIdx = sectionIndex;
   const cfg = { videoId: track.videoId, start: track.start, end: track.end };
   const label = document.getElementById('musicLabel');
   if (label) label.textContent = track.label || '';
@@ -539,10 +579,25 @@ function unlockAndPlay() {
     if (sections.length) {
       const sectionObs = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-          if (!entry.isIntersecting) return;
           const idx = sections.indexOf(entry.target);
           if (idx === -1) return;
-          playTrackForSection(idx);
+          if (entry.isIntersecting) {
+            _userPaused = false;
+            playTrackForSection(idx);
+          } else if (idx === _lastSectionIdx && _lastCfg && !_userPaused) {
+            // seção dona da track atual saiu — fade out e pausa
+            const capturedIdx = idx;
+            _fadeOut(1000, () => {
+              if (_lastSectionIdx !== capturedIdx) return; // nova seção já assumiu
+              if (ytPlayer && ytReady) ytPlayer.pauseVideo();
+              const mp = document.getElementById('musicPlayer');
+              if (mp) mp.style.display = 'none';
+              _lastCfg = null;
+              _lastSectionIdx = -1;
+              const btn = document.getElementById('musicToggle');
+              if (btn) { btn.textContent = '▶'; btn.setAttribute('aria-label', 'tocar música'); }
+            });
+          }
         });
       }, { threshold: 0.4 });
       sections.forEach(s => sectionObs.observe(s));
@@ -559,11 +614,15 @@ function unlockAndPlay() {
     const state = ytPlayer.getPlayerState();
     // YT.PlayerState.PLAYING = 1
     if (state === 1) {
+      _cancelFade();
+      _userPaused = true;
       ytPlayer.pauseVideo();
       btn.textContent = '▶';
       btn.setAttribute('aria-label', 'tocar música');
     } else {
+      _userPaused = false;
       ytPlayer.playVideo();
+      _fadeIn(100, 800);
       btn.textContent = '⏸';
       btn.setAttribute('aria-label', 'pausar música');
     }
@@ -790,7 +849,6 @@ importFile.addEventListener('change',(e)=>{
 
 addPolaroidBtn.addEventListener('click',()=>{
   const f=polaroidFile.files[0]; const cap=polaroidCap.value||''; if(!f) return alert('Escolha uma imagem');
-  if(f.size > 400*1024) return alert('foto grande demais 😬 — tente uma menor de 400 KB pra não travar o salvamento');
   const r=new FileReader(); r.onload=(ev)=>{
     const url=ev.target.result;
     const g=document.querySelector('.gallery');
