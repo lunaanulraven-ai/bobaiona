@@ -201,7 +201,10 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
         <input id="musicEnd" type="number" placeholder="termina em (seg)" min="0" style="flex:1" />
       </div>
       <select id="musicSection" aria-label="capítulo"></select>
-      <button id="saveMusicBtn">salvar música</button>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <button id="saveMusicBtn" style="flex:1">salvar música</button>
+        <button id="removeMusicBtn" style="flex:1;background:var(--rose)">remover música</button>
+      </div>
     </div>
     <hr />
     <div class="editor-section">
@@ -1055,6 +1058,29 @@ function _extractYtId(url) {
     const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === idx);
     if (pos >= 0) { MUSIC_CONFIG[pos] = entry; } else { MUSIC_CONFIG.push(entry); }
     alert('música salva 🎵 — clique em "salvar tudo" pra sincronizar com o outro aparelho');
+  });
+})();
+
+(function() {
+  const btn = document.getElementById('removeMusicBtn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const idx = parseInt(document.getElementById('musicSection')?.value || '0');
+    const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === idx);
+    if (pos === -1) { alert('essa seção não tem música configurada 🤷'); return; }
+    MUSIC_CONFIG.splice(pos, 1);
+    if (_lastSectionIdx === idx && _lastCfg) {
+      _fadeOut(800, () => {
+        if (ytPlayer && ytReady) ytPlayer.pauseVideo();
+        const mp = document.getElementById('musicPlayer');
+        if (mp) mp.style.display = 'none';
+        _lastCfg = null;
+        _lastSectionIdx = -1;
+        const tb = document.getElementById('musicToggle');
+        if (tb) { tb.textContent = '▶'; tb.setAttribute('aria-label', 'tocar música'); }
+      });
+    }
+    alert('música removida 🎵 — clique em "salvar tudo" pra sincronizar');
   });
 })();
 
