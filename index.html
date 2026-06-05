@@ -2100,8 +2100,9 @@ function _buildFields(blk){
       row._poster=_inp(item.poster||'','imagem de capa (url)');
       row._cap=_inp(item.cap||'','legenda');
       const db=_delBtn(); db.addEventListener('click',()=>row.remove());
-      [_fld('link do vídeo',row._src),_fld('imagem de capa',row._poster),_fld('legenda',row._cap),db].forEach(e=>row.appendChild(e));
-      il.appendChild(row);
+      [_fld('link do vídeo',row._src),_fld('imagem de capa',row._poster),_fld('legenda',row._cap)].forEach(e=>row.appendChild(e));
+      _vidUploadRow(row,v=>row._src.value=v);
+      row.appendChild(db); il.appendChild(row);
     };
     (d.items||[]).forEach(addI); w.appendChild(il);
     const ab=_addBtn('+ vídeo'); ab.addEventListener('click',()=>addI({src:'',poster:'',cap:''})); w.appendChild(ab);
@@ -2109,6 +2110,7 @@ function _buildFields(blk){
   }else if(t==='vfeat'){
     w._src=_inp(d.src,'link do vídeo'); w._poster=_inp(d.poster,'imagem de capa (url)'); w._cap=_inp(d.cap,'legenda');
     [_fld('link do vídeo',w._src),_fld('imagem de capa',w._poster),_fld('legenda',w._cap)].forEach(f=>w.appendChild(f));
+    _vidUploadRow(w,v=>w._src.value=v);
 
   }else if(t==='stats'){
     const il=document.createElement('div'); w._il=il;
@@ -2210,6 +2212,20 @@ function _imgUploadRowIn(parent,onUrl){
   });
   row.appendChild(lb); row.appendChild(fi); parent.appendChild(row);
 }
+function _vidUploadRow(parent,onUrl){
+  const row=document.createElement('div');
+  const lb=document.createElement('label'); lb.textContent='ou enviar vídeo:'; lb.style.opacity='.6';
+  const fi=document.createElement('input'); fi.type='file'; fi.accept='video/*';
+  fi.style.cssText='color:var(--cream);font-size:.8rem';
+  fi.addEventListener('change',async()=>{
+    const f=fi.files[0]; if(!f) return;
+    lb.textContent='enviando... ⏳';
+    const url=await _uploadMedia(f);
+    if(url){onUrl(url);lb.textContent='enviado ✓';}
+    else{lb.textContent='erro no upload 😞';}
+  });
+  row.appendChild(lb); row.appendChild(fi); parent.appendChild(row);
+}
 
 function _applyPanel(id,fields,type){
   const blk=_bGet(id); if(!blk) return;
@@ -2281,7 +2297,9 @@ function _showInsMenu(afterId,ev){
 
 // ── Supabase Storage upload ──────────────────────────────────────────────
 async function _uploadMedia(file){
-  if(file.size>10*1024*1024){_showSaveToast('⚠️ arquivo muito grande — use imagens menores de 10MB');return null;}
+  const _isVideo=file.type.startsWith('video/');
+  const _maxSize=_isVideo?200*1024*1024:10*1024*1024;
+  if(file.size>_maxSize){_showSaveToast(_isVideo?'⚠️ vídeo muito grande — máximo 200MB':'⚠️ arquivo muito grande — use imagens menores de 10MB');return null;}
   const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
   const fname=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
   try{
