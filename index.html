@@ -5,6 +5,7 @@
   <meta property="og:title" content="Pra minha bobaiona 🤍" />
   <meta property="og:description" content="Uma página feita à mão: a história do bobaião e da bobaiona — memórias, fotos e vídeos." />
   <meta property="og:type" content="website" />
+  <meta name="version" content="2026-06-05T00:00:00Z" />
   <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
   <title>Pra minha bobaiona 🤍</title>
   <script src="https://www.youtube.com/iframe_api"></script>
@@ -918,6 +919,25 @@ async function supaSave(ver, payload) {
     return res.ok;
   } catch(e) { return false; }
 }
+
+// ─── Auto-reload quando conteúdo foi atualizado no Supabase ─────────────────
+(async function _checkFreshness() {
+  if (!_SUPA_HEADERS) return;
+  try {
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/paginas?id=eq.shared&select=atualizado_em',
+      { headers: _SUPA_HEADERS }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    const remote = rows[0]?.atualizado_em;
+    if (!remote) return;
+    const local = localStorage.getItem('bobaiona_content_ts');
+    // Grava antes de recarregar para não entrar em loop
+    localStorage.setItem('bobaiona_content_ts', remote);
+    if (local && remote > local) location.reload(true);
+  } catch(e) {}
+})();
 
 function _showSaveToast(msg){
   const t=document.createElement('div');
