@@ -831,6 +831,7 @@ function toggleEditor(){
     }
     if (_isMobile()) document.body.classList.add('edit-mode-mobile');
     main.classList.add('edit-mode');
+    _fetchFonts();
     _buildMusicSectionSelect();
     _buildColorPickers();
     _rebuildToolbars();
@@ -1065,14 +1066,15 @@ const _GFONTS = [
   'DM Sans','Plus Jakarta Sans',
   'Cinzel','Uncial Antiqua','MedievalSharp','Philosopher',
 ];
-let _fontListLoaded = false;
-function _loadFontList() {
-  if (document.getElementById('gfont-list')) return;
-  const link = document.createElement('link');
-  link.id = 'gfont-list'; link.rel = 'stylesheet';
-  link.href = 'https://fonts.googleapis.com/css2?' +
-    _GFONTS.map(f=>'family='+encodeURIComponent(f)+':wght@400;600').join('&') + '&display=swap';
-  document.head.appendChild(link);
+let _allFonts = null;
+async function _fetchFonts() {
+  if (_allFonts) return;
+  try {
+    const res = await fetch('https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyBbjlDbRZrWCPyMlEuKqN9WFwoa0wHedP8&sort=popularity');
+    if (!res.ok) return;
+    const data = await res.json();
+    _allFonts = (data.items || []).map(f => f.family);
+  } catch(e) {}
 }
 
 let _gFontPickers = {};
@@ -1099,33 +1101,56 @@ function _mkFontPicker(initialVal, onChange) {
 
   const srch = document.createElement('input');
   srch.type = 'text';
-  srch.placeholder = '🔍 buscar...';
+  srch.placeholder = 'buscar fonte...';
   srch.style.cssText = 'width:100%;box-sizing:border-box;padding:8px 10px;background:rgba(0,0,0,.25);border:0;border-bottom:1px solid rgba(232,166,160,.15);color:var(--cream);font-size:.85rem;outline:none';
   drop.appendChild(srch);
 
   const list = document.createElement('div');
-  list.style.cssText = 'max-height:220px;overflow-y:auto;padding:4px 0';
+  list.style.cssText = 'max-height:200px;overflow-y:auto;padding:4px 0';
 
   const renderList = (filter) => {
     list.innerHTML = '';
+    const src = _allFonts || _GFONTS;
     const lc = (filter||'').toLowerCase();
-    const defOpt = document.createElement('button');
-    defOpt.type = 'button';
-    defOpt.textContent = '— padrão';
-    defOpt.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 12px;background:'+(!wrap._value?'rgba(214,114,111,.18)':'none')+';border:0;color:var(--soft);cursor:pointer;font-size:.85rem';
-    defOpt.addEventListener('click', () => {
-      wrap._value = '';
-      btnTxt.textContent = 'padrão';
-      btnTxt.style.fontFamily = 'inherit';
-      drop.style.display = 'none';
-      if (onChange) onChange('');
-    });
-    list.appendChild(defOpt);
-    _GFONTS.filter(f => !lc || f.toLowerCase().includes(lc)).forEach(f => {
+    const matches = src.filter(f => !lc || f.toLowerCase().includes(lc)).slice(0, 30);
+
+    if (!lc) {
+      const defOpt = document.createElement('button');
+      defOpt.type = 'button';
+      defOpt.textContent = '— padrão';
+      defOpt.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 12px;background:'+(!wrap._value?'rgba(214,114,111,.18)':'none')+';border:0;color:var(--soft);cursor:pointer;font-size:.85rem';
+      defOpt.addEventListener('click', () => {
+        wrap._value = '';
+        btnTxt.textContent = 'padrão';
+        btnTxt.style.fontFamily = 'inherit';
+        drop.style.display = 'none';
+        if (onChange) onChange('');
+      });
+      list.appendChild(defOpt);
+    }
+
+    if (!matches.length) {
+      const em = document.createElement('p');
+      em.style.cssText = 'padding:8px 12px;opacity:.5;font-size:.85rem';
+      em.textContent = 'nenhuma fonte encontrada';
+      list.appendChild(em);
+      return;
+    }
+
+    matches.forEach(f => {
       const opt = document.createElement('button');
       opt.type = 'button';
       opt.textContent = f;
-      opt.style.cssText = "display:block;width:100%;text-align:left;padding:7px 12px;background:"+(f===wrap._value?'rgba(214,114,111,.22)':'none')+";border:0;color:var(--cream);cursor:pointer;font-size:1rem;font-family:'"+f+"',inherit";
+      opt.style.cssText = 'display:block;width:100%;text-align:left;padding:7px 12px;background:'+(f===wrap._value?'rgba(214,114,111,.22)':'none')+';border:0;color:var(--cream);cursor:pointer;font-size:1rem';
+      opt.addEventListener('mouseenter', () => {
+        _loadGFont(f);
+        opt.style.fontFamily = "'"+f+"',inherit";
+        if (f !== wrap._value) opt.style.background = 'rgba(232,166,160,.15)';
+      });
+      opt.addEventListener('mouseleave', () => {
+        opt.style.fontFamily = 'inherit';
+        opt.style.background = f===wrap._value ? 'rgba(214,114,111,.22)' : 'none';
+      });
       opt.addEventListener('click', () => {
         wrap._value = f;
         btnTxt.textContent = f;
@@ -1136,6 +1161,13 @@ function _mkFontPicker(initialVal, onChange) {
       });
       list.appendChild(opt);
     });
+
+    if (src.filter(f => !lc || f.toLowerCase().includes(lc)).length > 30) {
+      const hint = document.createElement('p');
+      hint.style.cssText = 'padding:4px 12px 8px;opacity:.4;font-size:.75rem';
+      hint.textContent = 'refine a busca pra ver mais';
+      list.appendChild(hint);
+    }
   };
 
   drop.appendChild(list);
@@ -1144,7 +1176,6 @@ function _mkFontPicker(initialVal, onChange) {
   btn.addEventListener('click', ev => {
     ev.stopPropagation();
     if (drop.style.display !== 'none') { drop.style.display = 'none'; return; }
-    if (!_fontListLoaded) { _loadFontList(); _fontListLoaded = true; }
     drop.style.display = 'block';
     srch.value = '';
     renderList('');
