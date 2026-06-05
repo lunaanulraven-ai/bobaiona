@@ -1443,6 +1443,12 @@ function _blockEl(b) {
     el.innerHTML=d.items.map(i=>`<li><span class="dish">${i.dish}</span><span class="tag">${i.tag}</span></li>`).join('');
   }
   if(el) el.dataset.blockId=b.id;
+  if(el && d.style){
+    const s=d.style;
+    if(s.color) el.style.color=s.color;
+    if(s.fontFamily){_loadGFont(s.fontFamily);el.style.fontFamily="'"+s.fontFamily+"',inherit";}
+    if(s.fontSize) el.style.fontSize=s.fontSize;
+  }
   return el||null;
 }
 
@@ -1911,6 +1917,23 @@ function _buildFields(blk){
      _fld('url da foto',w._photoSrc),_fld('legenda da foto',w._photoCap)].forEach(f=>w.appendChild(f));
     _imgUploadRow(w,v=>w._photoSrc.value=v);
   }
+  // ── Estilo inline do bloco ────────────────────────────────────────────
+  const stSec=document.createElement('div');
+  stSec.style.cssText='border-top:1px solid rgba(232,166,160,.15);margin-top:10px;padding-top:8px;display:flex;flex-direction:column;gap:4px';
+  const stHead=document.createElement('span');stHead.className='bp-sub';stHead.textContent='🎨 estilo';stSec.appendChild(stHead);
+  const sty=blk.data.style||{};
+  const clrRow=document.createElement('div');clrRow.style.cssText='display:flex;align-items:center;gap:8px;margin:2px 0';
+  w._styleClr=document.createElement('input');w._styleClr.type='color';w._styleClr.value=sty.color||'#f7ece2';
+  w._styleClr.style.cssText='width:36px;height:26px;border:0;background:none;cursor:pointer;padding:0;border-radius:4px;flex-shrink:0';
+  const clrLbl=document.createElement('span');clrLbl.textContent='cor do texto';clrLbl.style.cssText='font-family:Caveat,cursive;font-size:.85rem;opacity:.65';
+  clrRow.appendChild(w._styleClr);clrRow.appendChild(clrLbl);stSec.appendChild(clrRow);
+  w._styleFont=_inp(sty.fontFamily||'','fonte (ex: Playfair Display)');
+  stSec.appendChild(_fld('fonte',w._styleFont));
+  w._styleSz=document.createElement('select');
+  w._styleSz.innerHTML='<option value="">normal</option><option value=".85rem">pequeno</option><option value="1.3rem">grande</option><option value="1.8rem">enorme</option>';
+  if(sty.fontSize) w._styleSz.value=sty.fontSize;
+  stSec.appendChild(_fld('tamanho',w._styleSz));
+  w.appendChild(stSec);
   return w;
 }
 
@@ -1969,6 +1992,12 @@ function _applyPanel(id,fields,type){
   }else if(type==='hero'){
     d.kicker=fields._kicker.value; d.h1=fields._h1.value; d.sub=fields._sub.value;
     d.photoSrc=fields._photoSrc.value; d.photoCap=fields._photoCap.value;
+  }
+  if(fields._styleClr!==undefined){
+    const color=fields._styleClr?.value||'';
+    const fontFamily=fields._styleFont?.value.trim()||'';
+    const fontSize=fields._styleSz?.value||'';
+    d.style=(color||fontFamily||fontSize)?{color,fontFamily,fontSize}:null;
   }
   _reRender();
   _openPanel(id);
@@ -2100,6 +2129,32 @@ function _openSheet(id){
         tabBody.appendChild(remM);
       }
 
+    } else if(tabId==='style'){
+      const sty=blk.data.style||{};
+      const clrRow=document.createElement('div');clrRow.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:12px';
+      const clrInp=document.createElement('input');clrInp.type='color';clrInp.value=sty.color||'#f7ece2';
+      clrInp.style.cssText='width:40px;height:32px;border:0;background:none;cursor:pointer;padding:0;border-radius:6px;flex-shrink:0';
+      const clrLbl=document.createElement('span');clrLbl.textContent='cor do texto';clrLbl.style.cssText='font-family:Caveat,cursive;font-size:1rem;opacity:.75';
+      clrRow.appendChild(clrInp);clrRow.appendChild(clrLbl);tabBody.appendChild(clrRow);
+      const fontLbl=document.createElement('p');fontLbl.style.cssText='font-size:.82rem;opacity:.6;margin-bottom:4px';fontLbl.textContent='fonte:';tabBody.appendChild(fontLbl);
+      const fontInp=document.createElement('input');fontInp.className='bs-inp';fontInp.placeholder='ex: Playfair Display';fontInp.value=sty.fontFamily||'';tabBody.appendChild(fontInp);
+      const szLbl=document.createElement('p');szLbl.style.cssText='font-size:.82rem;opacity:.6;margin:10px 0 4px';szLbl.textContent='tamanho:';tabBody.appendChild(szLbl);
+      const szSel=document.createElement('select');szSel.className='bs-inp';
+      szSel.innerHTML='<option value="">normal</option><option value=".85rem">pequeno</option><option value="1.3rem">grande</option><option value="1.8rem">enorme</option>';
+      if(sty.fontSize) szSel.value=sty.fontSize;
+      tabBody.appendChild(szSel);
+      const apSty=document.createElement('button');apSty.className='bs-apply';apSty.textContent='✓ aplicar estilo';
+      apSty.addEventListener('click',()=>{
+        const color=clrInp.value;
+        const fontFamily=fontInp.value.trim();
+        const fontSize=szSel.value;
+        blk.data.style=(color||fontFamily||fontSize)?{color,fontFamily,fontSize}:null;
+        if(fontFamily) _loadGFont(fontFamily);
+        _reRender();
+        saveAll();
+        _closeSheet();
+      });
+      tabBody.appendChild(apSty);
     } else if(tabId==='add'){
       const parent=_bParent(id)||(blk.type==='chapter'?blk:null);
       if(!parent){
@@ -2119,7 +2174,8 @@ function _openSheet(id){
   };
 
   const _noMusicTab=blk.type==='hero'||blk.type==='finale';
-  [{id:'edit',l:'✏️ editar'},...(_noMusicTab?[]:[{id:'music',l:'🎵 música'}]),{id:'add',l:'+ adicionar'}].forEach(({id:tid,l})=>{
+  const _noStyleTab=blk.type==='hero'||blk.type==='finale';
+  [{id:'edit',l:'✏️ editar'},...(_noMusicTab?[]:[{id:'music',l:'🎵 música'}]),...(_noStyleTab?[]:[{id:'style',l:'🎨 estilo'}]),{id:'add',l:'+ adicionar'}].forEach(({id:tid,l})=>{
     const btn=document.createElement('button'); btn.className='bs-tab'; btn.dataset.tab=tid; btn.textContent=l;
     btn.addEventListener('click',()=>renderTab(tid));
     tabBar.appendChild(btn);
