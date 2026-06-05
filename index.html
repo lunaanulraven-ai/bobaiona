@@ -1737,26 +1737,29 @@ async function _migrateToShared(){
 }
 
 async function initBlocks(){
-  await _migrateToShared();
-  let blocks=null;
-  const supaData=await supaLoad('shared');
-  if(supaData){
-    if(supaData.blocks?.length) blocks=_migrateFlat(supaData.blocks);
-    if(supaData.music) MUSIC_CONFIG=supaData.music;
-    try{localStorage.setItem('bobaiona_shared',JSON.stringify(supaData));}catch(e){}
-  } else {
-    const raw=localStorage.getItem('bobaiona_shared');
-    if(raw) try{const d=JSON.parse(raw);if(d.blocks?.length)blocks=_migrateFlat(d.blocks);if(d.music)MUSIC_CONFIG=d.music;}catch(e){}
+  try {
+    await _migrateToShared();
+    let blocks=null;
+    const supaData=await supaLoad('shared');
+    if(supaData){
+      if(supaData.blocks?.length) blocks=_migrateFlat(supaData.blocks);
+      if(supaData.music) MUSIC_CONFIG=supaData.music;
+      try{localStorage.setItem('bobaiona_shared',JSON.stringify(supaData));}catch(e){}
+    } else {
+      const raw=localStorage.getItem('bobaiona_shared');
+      if(raw) try{const d=JSON.parse(raw);if(d.blocks?.length)blocks=_migrateFlat(d.blocks);if(d.music)MUSIC_CONFIG=d.music;}catch(e){}
+    }
+    const prefs=await supaLoad(currentVersion+'_prefs');
+    if(prefs){applyPrefs(prefs);_buildThemePicker();}
+    if(prefs) try{localStorage.setItem('bobaiona_'+currentVersion+'_prefs',JSON.stringify(prefs));}catch(e){}
+    else{const raw=localStorage.getItem('bobaiona_'+currentVersion+'_prefs');if(raw)try{const p=JSON.parse(raw);applyPrefs(p);_buildThemePicker();}catch(e){}}
+    if(!blocks) blocks=parsePageToBlocks();
+    _blocks=blocks;
+    renderBlocks(_blocks);
+    _reinitDOM();
+  } finally {
+    document.getElementById('main').style.opacity='1';
   }
-  const prefs=await supaLoad(currentVersion+'_prefs');
-  if(prefs){applyPrefs(prefs);_buildThemePicker();}
-  if(prefs) try{localStorage.setItem('bobaiona_'+currentVersion+'_prefs',JSON.stringify(prefs));}catch(e){}
-  else{const raw=localStorage.getItem('bobaiona_'+currentVersion+'_prefs');if(raw)try{const p=JSON.parse(raw);applyPrefs(p);_buildThemePicker();}catch(e){}}
-  if(!blocks) blocks=parsePageToBlocks();
-  _blocks=blocks;
-  renderBlocks(_blocks);
-  _reinitDOM();
-  document.getElementById('main').style.opacity='1';
 }
 initBlocks();
 
