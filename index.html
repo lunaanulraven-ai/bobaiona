@@ -13,6 +13,8 @@
   --bg:#160c14; --bg2:#241320; --plum:#37192b;
   --cream:#f7ece2; --soft:#e7d7c9; --blush:#e8a6a0; --rose:#d6726f; --gold:#e2b773;
   --font-title:'Fraunces',serif; --font-body:'Spectral',Georgia,serif; --font-script:'Caveat',cursive;
+  --clr-chap-h:#fbeee3; --clr-chap-date:var(--rose); --clr-story:var(--soft);
+  --clr-pull:var(--gold); --clr-note:#f4e3d4; --clr-autor-sig:inherit;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -77,12 +79,12 @@ section{padding:64px 0;position:relative;z-index:2}
 .scroll-cue{margin-top:48px;font-family:'Caveat',cursive;font-size:1.4rem;color:var(--gold);opacity:.85;animation:bob 2s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
 .chap-no{font-family:var(--font-script);font-size:1.5rem;color:var(--gold);transform:rotate(-2deg);display:inline-block}
-.chap-h{font-family:var(--font-title);font-weight:600;font-size:clamp(1.9rem,6.5vw,3rem);margin:2px 0 8px;letter-spacing:-.015em;color:#fbeee3;line-height:1.05}
-.chap-date{font-family:var(--font-body);font-style:italic;color:var(--rose);font-size:1rem;margin-bottom:20px;letter-spacing:.04em}
-.story{font-size:1.12rem;color:var(--soft);margin:0 0 18px}
+.chap-h{font-family:var(--font-title);font-weight:600;font-size:clamp(1.9rem,6.5vw,3rem);margin:2px 0 8px;letter-spacing:-.015em;color:var(--clr-chap-h);line-height:1.05}
+.chap-date{font-family:var(--font-body);font-style:italic;color:var(--clr-chap-date);font-size:1rem;margin-bottom:20px;letter-spacing:.04em}
+.story{font-size:1.12rem;color:var(--clr-story);margin:0 0 18px}
 .story em{color:var(--blush);font-style:italic}
 .story strong{color:var(--cream);font-weight:600}
-.pull{font-family:var(--font-title);font-style:italic;font-size:clamp(1.4rem,5vw,2rem);color:var(--gold);text-align:center;margin:34px auto;max-width:18ch;line-height:1.25}
+.pull{font-family:var(--font-title);font-style:italic;font-size:clamp(1.4rem,5vw,2rem);color:var(--clr-pull);text-align:center;margin:34px auto;max-width:18ch;line-height:1.25}
 .chat{background:rgba(18,28,26,.6);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:16px 14px;box-shadow:0 14px 40px rgba(0,0,0,.35);margin:22px 0}
 .chat .head{display:flex;align-items:center;gap:10px;padding:2px 4px 12px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:12px}
 .chat .ava{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--gold));display:flex;align-items:center;justify-content:center;font-family:'Fraunces';color:#fff;font-size:1.05rem}
@@ -94,7 +96,7 @@ section{padding:64px 0;position:relative;z-index:2}
 .bubble.him{background:#075e54;color:#f3f7f5;border-bottom-right-radius:4px}
 .bubble.her{background:#f3ece2;color:#1a1410;border-bottom-left-radius:4px}
 .bubble .time{position:absolute;right:10px;bottom:4px;font-size:.6rem;opacity:.55}
-.note{font-family:var(--font-script);font-size:1.55rem;line-height:1.5;color:#f4e3d4;background:rgba(232,166,160,.07);border-left:3px solid var(--rose);padding:16px 22px;border-radius:0 12px 12px 0;margin:24px 0}
+.note{font-family:var(--font-script);font-size:1.55rem;line-height:1.5;color:var(--clr-note);background:rgba(232,166,160,.07);border-left:3px solid var(--rose);padding:16px 22px;border-radius:0 12px 12px 0;margin:24px 0}
 .gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:8px}
 .polaroid{background:#fbf6ef;padding:10px 10px 42px;border-radius:3px;box-shadow:0 18px 40px rgba(0,0,0,.5);transition:transform .35s,box-shadow .35s}
 .polaroid img{width:100%;display:block;border-radius:2px;aspect-ratio:3/4;object-fit:cover}
@@ -220,7 +222,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 .blk-autor-eu,.blk-autor-outro{display:block}
 .blk-autor-eu{max-width:85%;margin-left:auto!important;margin-right:0!important;background:rgba(7,94,84,.35)!important;border-radius:18px 4px 18px 18px!important;border-left:none!important;padding:14px 18px!important}
 .blk-autor-outro{max-width:85%;margin-right:auto!important;margin-left:0!important;background:rgba(247,236,226,.08)!important;border-radius:4px 18px 18px 18px!important;border-left:none!important;padding:14px 18px!important}
-.blk-autor-sig{font-family:var(--font-script);font-size:.85rem;opacity:.5;display:block;margin-top:4px}
+.blk-autor-sig{font-family:var(--font-script);font-size:.85rem;opacity:.5;display:block;margin-top:4px;color:var(--clr-autor-sig)}
 .blk-autor-eu .blk-autor-sig{text-align:right}
 .blk-autor-outro .blk-autor-sig{text-align:left}
 </style></head><body>
@@ -280,6 +282,11 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
       <input id="fontBody"  placeholder="fonte do texto (ex: Spectral)" />
       <input id="fontScript" placeholder="fonte cursiva (ex: Caveat)" />
       <button id="applyFontsBtn" style="margin-top:4px">aplicar fontes</button>
+    </div>
+    <hr />
+    <div class="editor-section">
+      <h4>🎨 cores dos elementos</h4>
+      <div id="colorPickers" style="display:flex;flex-direction:column;gap:5px"></div>
     </div>
     <hr />
     <details>
@@ -823,6 +830,7 @@ function toggleEditor(){
     if (_isMobile()) document.body.classList.add('edit-mode-mobile');
     main.classList.add('edit-mode');
     _buildMusicSectionSelect();
+    _buildColorPickers();
     _rebuildToolbars();
   } else {
     editorPanel.style.display = 'none';
@@ -923,9 +931,10 @@ function _gatherFonts() {
 
 async function saveAll() {
   const theme = localStorage.getItem('bobaiona_theme_' + currentVersion) || 'padrao';
-  const fonts = _gatherFonts();
+  const fonts  = _gatherFonts();
+  const colors = _gatherColors();
   const sharedPayload = { blocks: _blocks, music: MUSIC_CONFIG };
-  const prefsPayload = { theme, ...(fonts ? { fonts } : {}) };
+  const prefsPayload = { theme, ...(fonts ? { fonts } : {}), ...(colors ? { colors } : {}) };
   try { localStorage.setItem('bobaiona_shared', JSON.stringify(sharedPayload)); } catch(e) {}
   try { localStorage.setItem('bobaiona_' + currentVersion + '_prefs', JSON.stringify(prefsPayload)); } catch(e) {}
   const status = document.getElementById('syncStatus');
@@ -1056,10 +1065,72 @@ function applyFonts(fonts) {
   const fs = document.getElementById('fontScript'); if (fs && fonts.script) fs.value = fonts.script;
 }
 
+const _CLR_VARS = [
+  { label: 'títulos de capítulo', prop: '--clr-chap-h',    def: '#fbeee3' },
+  { label: 'datas',               prop: '--clr-chap-date',  def: '' },
+  { label: 'textos (story)',      prop: '--clr-story',       def: '' },
+  { label: 'pulls (destaque)',    prop: '--clr-pull',        def: '' },
+  { label: 'notas',               prop: '--clr-note',        def: '#f4e3d4' },
+  { label: 'assinaturas',         prop: '--clr-autor-sig',   def: '' },
+  { label: 'texto geral',         prop: '--cream',           def: '#f7ece2' },
+];
+
+function applyColors(colors) {
+  if (!colors) return;
+  const r = document.documentElement.style;
+  _CLR_VARS.forEach(({ prop }) => {
+    if (colors[prop]) r.setProperty(prop, colors[prop]);
+  });
+  // reflect into pickers if open
+  _CLR_VARS.forEach(({ prop }) => {
+    const inp = document.querySelector('#colorPickers [data-prop="' + prop + '"]');
+    if (inp && colors[prop]) inp.value = colors[prop];
+  });
+}
+
+function _buildColorPickers(colors) {
+  const container = document.getElementById('colorPickers');
+  if (!container) return;
+  container.innerHTML = '';
+  _CLR_VARS.forEach(({ label, prop, def }) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px';
+    const inp = document.createElement('input');
+    inp.type = 'color'; inp.dataset.prop = prop;
+    const cur = getComputedStyle(document.documentElement).getPropertyValue(prop).trim();
+    inp.value = _resolveColorHex(cur) || def || '#f7ece2';
+    inp.style.cssText = 'width:36px;height:28px;border:0;background:none;cursor:pointer;padding:0;border-radius:4px';
+    const lbl = document.createElement('span');
+    lbl.textContent = label; lbl.style.cssText = 'font-family:Caveat,cursive;font-size:.95rem;opacity:.75';
+    inp.addEventListener('input', () => {
+      document.documentElement.style.setProperty(prop, inp.value);
+    });
+    inp.addEventListener('change', saveAll);
+    row.appendChild(inp); row.appendChild(lbl);
+    container.appendChild(row);
+  });
+}
+
+function _resolveColorHex(val) {
+  if (!val) return '';
+  if (/^#[0-9a-f]{3,8}$/i.test(val)) return val;
+  return '';
+}
+
+function _gatherColors() {
+  const colors = {};
+  _CLR_VARS.forEach(({ prop }) => {
+    const v = document.documentElement.style.getPropertyValue(prop).trim();
+    if (v) colors[prop] = v;
+  });
+  return Object.keys(colors).length ? colors : null;
+}
+
 function applyPrefs(prefs) {
   if (!prefs) return;
   if (prefs.theme)  applyTheme(prefs.theme);
   if (prefs.fonts)  applyFonts(prefs.fonts);
+  if (prefs.colors) applyColors(prefs.colors);
 }
 
 (function() {
