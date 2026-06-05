@@ -12,6 +12,7 @@
 :root{
   --bg:#160c14; --bg2:#241320; --plum:#37192b;
   --cream:#f7ece2; --soft:#e7d7c9; --blush:#e8a6a0; --rose:#d6726f; --gold:#e2b773;
+  --font-title:'Fraunces',serif; --font-body:'Spectral',Georgia,serif; --font-script:'Caveat',cursive;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -21,7 +22,7 @@ body{
     radial-gradient(900px 520px at -5% 100%, rgba(226,183,115,.13), transparent 55%),
     linear-gradient(160deg,var(--bg) 0%,var(--bg2) 55%,var(--plum) 100%);
   background-attachment:fixed; color:var(--cream);
-  font-family:'Spectral',Georgia,serif; line-height:1.75; overflow-x:hidden;
+  font-family:var(--font-body); line-height:1.75; overflow-x:hidden;
 }
 /* Skip link visible on keyboard focus */
 .skip-link{position:absolute;left:12px;top:12px;background:#fff;color:#160c14;padding:8px 10px;border-radius:6px;z-index:1100;transform:translateY(-120%);opacity:0;transition:transform .18s,opacity .18s}
@@ -62,8 +63,8 @@ section{padding:64px 0;position:relative;z-index:2}
 @keyframes float{0%{transform:translateY(0) rotate(0);opacity:0}10%{opacity:.5}90%{opacity:.5}100%{transform:translateY(-118vh) rotate(360deg);opacity:0}}
 #bar{position:fixed;top:0;left:0;height:3px;width:0;z-index:997;background:linear-gradient(90deg,var(--gold),var(--rose),var(--blush))}
 .hero{min-height:96vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:48px 22px}
-.kicker{font-family:'Caveat',cursive;font-size:1.9rem;color:var(--gold);transform:rotate(-3deg);margin-bottom:2px}
-.hero h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(3rem,14vw,6.2rem);line-height:.92;letter-spacing:-.025em}
+.kicker{font-family:var(--font-script);font-size:1.9rem;color:var(--gold);transform:rotate(-3deg);margin-bottom:2px}
+.hero h1{font-family:var(--font-title);font-weight:600;font-size:clamp(3rem,14vw,6.2rem);line-height:.92;letter-spacing:-.025em}
 .hero h1 em{font-style:italic;color:var(--blush)}
 .hero .sub{max-width:500px;margin:24px auto 0;font-size:1.14rem;color:var(--soft)}
 .hero-photo{width:min(290px,74vw);margin:6px auto 26px;background:#fbf6ef;padding:12px 12px 52px;border-radius:3px;box-shadow:0 28px 64px rgba(0,0,0,.55);transform:rotate(-2.4deg)}
@@ -75,13 +76,13 @@ section{padding:64px 0;position:relative;z-index:2}
 .counter .lab{font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;opacity:.7;margin-top:3px}
 .scroll-cue{margin-top:48px;font-family:'Caveat',cursive;font-size:1.4rem;color:var(--gold);opacity:.85;animation:bob 2s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
-.chap-no{font-family:'Caveat',cursive;font-size:1.5rem;color:var(--gold);transform:rotate(-2deg);display:inline-block}
-.chap-h{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.9rem,6.5vw,3rem);margin:2px 0 8px;letter-spacing:-.015em;color:#fbeee3;line-height:1.05}
-.chap-date{font-family:'Spectral';font-style:italic;color:var(--rose);font-size:1rem;margin-bottom:20px;letter-spacing:.04em}
+.chap-no{font-family:var(--font-script);font-size:1.5rem;color:var(--gold);transform:rotate(-2deg);display:inline-block}
+.chap-h{font-family:var(--font-title);font-weight:600;font-size:clamp(1.9rem,6.5vw,3rem);margin:2px 0 8px;letter-spacing:-.015em;color:#fbeee3;line-height:1.05}
+.chap-date{font-family:var(--font-body);font-style:italic;color:var(--rose);font-size:1rem;margin-bottom:20px;letter-spacing:.04em}
 .story{font-size:1.12rem;color:var(--soft);margin:0 0 18px}
 .story em{color:var(--blush);font-style:italic}
 .story strong{color:var(--cream);font-weight:600}
-.pull{font-family:'Fraunces',serif;font-style:italic;font-size:clamp(1.4rem,5vw,2rem);color:var(--gold);text-align:center;margin:34px auto;max-width:18ch;line-height:1.25}
+.pull{font-family:var(--font-title);font-style:italic;font-size:clamp(1.4rem,5vw,2rem);color:var(--gold);text-align:center;margin:34px auto;max-width:18ch;line-height:1.25}
 .chat{background:rgba(18,28,26,.6);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:16px 14px;box-shadow:0 14px 40px rgba(0,0,0,.35);margin:22px 0}
 .chat .head{display:flex;align-items:center;gap:10px;padding:2px 4px 12px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:12px}
 .chat .ava{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--gold));display:flex;align-items:center;justify-content:center;font-family:'Fraunces';color:#fff;font-size:1.05rem}
@@ -93,7 +94,7 @@ section{padding:64px 0;position:relative;z-index:2}
 .bubble.him{background:#075e54;color:#f3f7f5;border-bottom-right-radius:4px}
 .bubble.her{background:#f3ece2;color:#1a1410;border-bottom-left-radius:4px}
 .bubble .time{position:absolute;right:10px;bottom:4px;font-size:.6rem;opacity:.55}
-.note{font-family:'Caveat',cursive;font-size:1.55rem;line-height:1.5;color:#f4e3d4;background:rgba(232,166,160,.07);border-left:3px solid var(--rose);padding:16px 22px;border-radius:0 12px 12px 0;margin:24px 0}
+.note{font-family:var(--font-script);font-size:1.55rem;line-height:1.5;color:#f4e3d4;background:rgba(232,166,160,.07);border-left:3px solid var(--rose);padding:16px 22px;border-radius:0 12px 12px 0;margin:24px 0}
 .gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:8px}
 .polaroid{background:#fbf6ef;padding:10px 10px 42px;border-radius:3px;box-shadow:0 18px 40px rgba(0,0,0,.5);transition:transform .35s,box-shadow .35s}
 .polaroid img{width:100%;display:block;border-radius:2px;aspect-ratio:3/4;object-fit:cover}
@@ -121,7 +122,7 @@ section{padding:64px 0;position:relative;z-index:2}
 .stat .lab{font-size:.85rem;color:var(--soft);margin-top:6px;opacity:.85}
 .finale{text-align:center}
 .finale .big{font-family:'Fraunces',serif;font-style:italic;font-size:clamp(2rem,8vw,3.4rem);color:var(--blush);line-height:1.12;margin:8px 0 22px}
-.sig{font-family:'Caveat',cursive;font-size:2.1rem;color:var(--gold);margin-top:16px}
+.sig{font-family:var(--font-script);font-size:2.1rem;color:var(--gold);margin-top:16px}
 .heartbeat{font-size:2.6rem;display:inline-block;animation:beat 1.3s ease-in-out infinite;color:var(--rose)}
 @keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}45%{transform:scale(1.18)}}
 .reveal{opacity:0;transform:translateY(34px);transition:opacity .9s ease,transform .9s ease}
@@ -219,7 +220,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 .blk-autor-eu,.blk-autor-outro{display:block}
 .blk-autor-eu{max-width:85%;margin-left:auto!important;margin-right:0!important;background:rgba(7,94,84,.35)!important;border-radius:18px 4px 18px 18px!important;border-left:none!important;padding:14px 18px!important}
 .blk-autor-outro{max-width:85%;margin-right:auto!important;margin-left:0!important;background:rgba(247,236,226,.08)!important;border-radius:4px 18px 18px 18px!important;border-left:none!important;padding:14px 18px!important}
-.blk-autor-sig{font-family:'Caveat',cursive;font-size:.85rem;opacity:.5;display:block;margin-top:4px}
+.blk-autor-sig{font-family:var(--font-script);font-size:.85rem;opacity:.5;display:block;margin-top:4px}
 .blk-autor-eu .blk-autor-sig{text-align:right}
 .blk-autor-outro .blk-autor-sig{text-align:left}
 </style></head><body>
@@ -270,6 +271,15 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
         <button id="saveMusicBtn" style="flex:1">salvar música</button>
         <button id="removeMusicBtn" style="flex:1;background:var(--rose)">remover música</button>
       </div>
+    </div>
+    <hr />
+    <div class="editor-section">
+      <h4>✍️ fontes</h4>
+      <p style="font-size:.75rem;opacity:.6;margin-bottom:4px">nome exato do Google Fonts (ex: Playfair Display)</p>
+      <input id="fontTitle" placeholder="fonte dos títulos (ex: Fraunces)" />
+      <input id="fontBody"  placeholder="fonte do texto (ex: Spectral)" />
+      <input id="fontScript" placeholder="fonte cursiva (ex: Caveat)" />
+      <button id="applyFontsBtn" style="margin-top:4px">aplicar fontes</button>
     </div>
     <hr />
     <details>
@@ -699,7 +709,7 @@ openBtn.addEventListener('click',()=>{
   });
   supaLoad(currentVersion + '_prefs').then(prefs => {
     if (!prefs) return;
-    if (prefs.theme) { applyTheme(prefs.theme); _buildThemePicker(); }
+    applyPrefs(prefs); _buildThemePicker();
     try { localStorage.setItem('bobaiona_' + currentVersion + '_prefs', JSON.stringify(prefs)); } catch(e) {}
   });
 });
@@ -904,10 +914,18 @@ function _showSaveToast(msg){
   setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),400);},2500);
 }
 
+function _gatherFonts() {
+  const title  = document.getElementById('fontTitle')?.value.trim()  || '';
+  const body   = document.getElementById('fontBody')?.value.trim()   || '';
+  const script = document.getElementById('fontScript')?.value.trim() || '';
+  return (title || body || script) ? { title, body, script } : null;
+}
+
 async function saveAll() {
   const theme = localStorage.getItem('bobaiona_theme_' + currentVersion) || 'padrao';
+  const fonts = _gatherFonts();
   const sharedPayload = { blocks: _blocks, music: MUSIC_CONFIG };
-  const prefsPayload = { theme };
+  const prefsPayload = { theme, ...(fonts ? { fonts } : {}) };
   try { localStorage.setItem('bobaiona_shared', JSON.stringify(sharedPayload)); } catch(e) {}
   try { localStorage.setItem('bobaiona_' + currentVersion + '_prefs', JSON.stringify(prefsPayload)); } catch(e) {}
   const status = document.getElementById('syncStatus');
@@ -1011,11 +1029,50 @@ function applyTheme(themeKey) {
   r.setProperty('--rose',  t.rose);
   r.setProperty('--gold',  t.gold);
   localStorage.setItem('bobaiona_theme_' + currentVersion, themeKey);
-  // update active state on picker buttons
   document.querySelectorAll('.theme-btn').forEach(btn => {
     btn.classList.toggle('active-theme', btn.dataset.theme === themeKey);
   });
 }
+
+function _loadGFont(name) {
+  if (!name) return;
+  const id = 'gfont-' + name.replace(/\s+/g, '-').toLowerCase();
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id; link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(name) + ':wght@400;600&display=swap';
+  document.head.appendChild(link);
+}
+
+function applyFonts(fonts) {
+  if (!fonts) return;
+  const r = document.documentElement.style;
+  if (fonts.title)  { _loadGFont(fonts.title);  r.setProperty('--font-title',  "'" + fonts.title  + "',serif"); }
+  if (fonts.body)   { _loadGFont(fonts.body);   r.setProperty('--font-body',   "'" + fonts.body   + "',Georgia,serif"); }
+  if (fonts.script) { _loadGFont(fonts.script); r.setProperty('--font-script', "'" + fonts.script + "',cursive"); }
+  // reflect into inputs if panel is open
+  const ft = document.getElementById('fontTitle');  if (ft && fonts.title)  ft.value = fonts.title;
+  const fb = document.getElementById('fontBody');   if (fb && fonts.body)   fb.value = fonts.body;
+  const fs = document.getElementById('fontScript'); if (fs && fonts.script) fs.value = fonts.script;
+}
+
+function applyPrefs(prefs) {
+  if (!prefs) return;
+  if (prefs.theme)  applyTheme(prefs.theme);
+  if (prefs.fonts)  applyFonts(prefs.fonts);
+}
+
+(function() {
+  const btn = document.getElementById('applyFontsBtn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const title  = document.getElementById('fontTitle')?.value.trim()  || '';
+    const body   = document.getElementById('fontBody')?.value.trim()   || '';
+    const script = document.getElementById('fontScript')?.value.trim() || '';
+    applyFonts({ title, body, script });
+    saveAll();
+  });
+})();
 
 async function switchVersion(ver) {
   if (ver === currentVersion) return;
@@ -1038,7 +1095,7 @@ async function switchVersion(ver) {
     }
   } catch(e) {}
 
-  applyTheme(prefs?.theme || VERSION_META[currentVersion]?.theme || 'padrao');
+  applyPrefs(prefs || { theme: VERSION_META[currentVersion]?.theme || 'padrao' });
   if (editMode) _rebuildToolbars();
   _markActiveVersionBtn();
   _buildThemePicker();
@@ -1072,13 +1129,13 @@ document.getElementById('main').addEventListener('click', (e) => {
   switchVersion(btn.dataset.ver);
 });
 
-// ─── Init: aplica tema salvo para a versão atual ─────────────────────────────
+// ─── Init: aplica prefs salvas para a versão atual ───────────────────────────
 (function initVersionTheme() {
   try {
     const raw = localStorage.getItem('bobaiona_' + currentVersion + '_prefs');
     const prefs = raw ? JSON.parse(raw) : null;
     const theme = prefs?.theme || localStorage.getItem('bobaiona_theme_' + currentVersion) || 'padrao';
-    applyTheme(theme);
+    applyPrefs({ ...prefs, theme });
   } catch(e) {}
   _markActiveVersionBtn();
   _buildThemePicker();
@@ -1389,9 +1446,9 @@ async function initBlocks(){
     if(raw) try{const d=JSON.parse(raw);if(d.blocks?.length)blocks=_migrateFlat(d.blocks);if(d.music)MUSIC_CONFIG=d.music;}catch(e){}
   }
   const prefs=await supaLoad(currentVersion+'_prefs');
-  if(prefs?.theme){applyTheme(prefs.theme);_buildThemePicker();}
+  if(prefs){applyPrefs(prefs);_buildThemePicker();}
   if(prefs) try{localStorage.setItem('bobaiona_'+currentVersion+'_prefs',JSON.stringify(prefs));}catch(e){}
-  else{const raw=localStorage.getItem('bobaiona_'+currentVersion+'_prefs');if(raw)try{const p=JSON.parse(raw);if(p.theme){applyTheme(p.theme);_buildThemePicker();}}catch(e){}}
+  else{const raw=localStorage.getItem('bobaiona_'+currentVersion+'_prefs');if(raw)try{const p=JSON.parse(raw);applyPrefs(p);_buildThemePicker();}catch(e){}}
   if(!blocks) blocks=parsePageToBlocks();
   _blocks=blocks;
   renderBlocks(_blocks);
