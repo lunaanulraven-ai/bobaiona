@@ -1388,6 +1388,7 @@ async function switchVersion(ver) {
   } catch(e) {}
 
   applyPrefs(prefs || { theme: VERSION_META[currentVersion]?.theme || 'padrao' });
+  _buildColorPickers();
   if (editMode) _rebuildToolbars();
   _markActiveVersionBtn();
   _buildThemePicker();
@@ -1451,9 +1452,10 @@ function _extractYtId(url) {
   try {
     const u = new URL(url.includes('://') ? url : 'https://' + url);
     if (u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('?')[0];
+    if (u.pathname.includes('/shorts/')) return u.pathname.split('/shorts/')[1].split('?')[0];
     return u.searchParams.get('v') || '';
   } catch(e) {
-    const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
     return m ? m[1] : '';
   }
 }
@@ -1834,7 +1836,7 @@ function _rebuildToolbars(){
       const fp=_bParent(from),tp=_bParent(id);
       if(!fp&&!tp) _moveTo(from,id);
       else if(fp&&tp&&fp.id===tp.id) _moveTo(from,id);
-      // Cross-parent drag: não permitido por spec
+      else _showSaveToast('↕️ arraste dentro do mesmo capítulo — use ↑↓ pra mover entre capítulos');
     });
   });
 }
@@ -2022,6 +2024,10 @@ function _closePanel(){
   const p=document.getElementById('blkPanel');
   p.classList.remove('open'); p.setAttribute('aria-hidden','true');
   document.querySelectorAll('.blk-sel').forEach(e=>e.classList.remove('blk-sel'));
+}
+
+function _refreshPanel(id){
+  if(_editingId===id) _openPanel(id);
 }
 
 function _buildFields(blk){
@@ -2240,7 +2246,7 @@ function _applyPanel(id,fields,type){
     d.style=(color||fontFamily||fontSize)?{color,fontFamily,fontSize}:null;
   }
   _reRender();
-  _openPanel(id);
+  _refreshPanel(id);
   saveAll();
 }
 
@@ -2272,6 +2278,7 @@ function _showInsMenu(afterId,ev){
 
 // ── Supabase Storage upload ──────────────────────────────────────────────
 async function _uploadMedia(file){
+  if(file.size>10*1024*1024){_showSaveToast('⚠️ arquivo muito grande — use imagens menores de 10MB');return null;}
   const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
   const fname=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
   try{
