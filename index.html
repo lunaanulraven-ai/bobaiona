@@ -8,7 +8,6 @@
   <meta name="version" content="2026-06-05T00:00:00Z" />
   <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
   <title>Pra minha bobaiona 🤍</title>
-  <script src="https://www.youtube.com/iframe_api"></script>
   <link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Caveat:wght@500;700&family=Spectral:ital,wght@0,300;0,400;1,400&display=swap' rel='stylesheet'><style>
 :root{
   --bg:#160c14; --bg2:#241320; --plum:#37192b;
@@ -133,11 +132,7 @@ section{padding:64px 0;position:relative;z-index:2}
 footer{text-align:center;padding:28px 0 50px;font-size:.78rem;opacity:.45}
 @media(max-width:520px){.gallery{gap:14px}.vwall{gap:8px}section{padding:50px 0}}
 /* Floating music player */
-#musicPlayer{position:fixed;bottom:20px;left:18px;z-index:998;display:flex;align-items:center;gap:8px;background:rgba(22,12,20,.78);border:1px solid rgba(232,166,160,.22);backdrop-filter:blur(10px);border-radius:40px;padding:7px 14px 7px 8px;box-shadow:0 8px 24px rgba(0,0,0,.45);transition:opacity .4s}
-#musicPlayer button#musicToggle{background:none;border:0;cursor:pointer;font-size:1.1rem;color:var(--blush);padding:0 2px;line-height:1;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
-#musicPlayer button#musicToggle:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offset:2px}
-#musicLabel{font-family:'Caveat',cursive;font-size:1rem;color:var(--cream);opacity:.88;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#ytHolder{position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;pointer-events:none}
+#musicPlayer{position:fixed;bottom:20px;left:18px;z-index:998;width:300px;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.6)}
 /* Version bar */
 #versionBar{position:sticky;top:0;z-index:990;display:flex;justify-content:center;gap:12px;padding:10px 0;background:rgba(22,12,20,.85);backdrop-filter:blur(8px)}
 .ver-btn{font-family:'Caveat',cursive;font-size:1.2rem;border-radius:40px;background:transparent;color:var(--soft);border:1px solid rgba(232,166,160,.3);padding:6px 18px;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
@@ -241,13 +236,9 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
   <button id="openBtn" aria-expanded="false" aria-controls="main">abrir</button>
 </div>
 
-<!-- Hidden YouTube player holder -->
-<div id="ytHolder"></div>
-
 <!-- Floating music player -->
-<div id="musicPlayer" style="display:none" aria-label="player de música">
-  <button id="musicToggle" aria-label="pausar música">⏸</button>
-  <span id="musicLabel"></span>
+<div id="musicPlayer" style="display:none">
+  <div id="spotifyEmbed"></div>
 </div>
 
 <!-- Editor UI -->
@@ -266,17 +257,8 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
     <hr />
     <div class="editor-section">
       <h4>🎵 música do capítulo</h4>
-      <p style="font-size:.8rem;opacity:.65;margin-bottom:4px">cole o link do YouTube e escolha o trecho</p>
-      <input id="musicUrl" placeholder="link do YouTube (ex: youtube.com/watch?v=...)" />
-      <div style="display:flex;gap:6px;margin:4px 0">
-        <input id="musicStart" type="number" placeholder="começa em (seg)" min="0" style="flex:1" />
-        <input id="musicEnd" type="number" placeholder="termina em (seg)" min="0" style="flex:1" />
-      </div>
       <select id="musicSection" aria-label="capítulo"></select>
-      <div style="display:flex;gap:6px;margin-top:4px">
-        <button id="saveMusicBtn" style="flex:1">salvar música</button>
-        <button id="removeMusicBtn" style="flex:1;background:var(--rose)">remover música</button>
-      </div>
+      <div id="desktopMusicSearch" style="margin-top:8px"></div>
     </div>
     <hr />
     <div class="editor-section">
@@ -549,111 +531,76 @@ let MUSIC_CONFIG = (function() {
   } catch(e) { return []; }
 })();
 
-// ─── YouTube IFrame Player ───────────────────────────────────────────────────
-let ytPlayer = null;
-let ytReady = false;
-let pendingPlay = null;
-let _lastCfg = null;
+// ─── Spotify player ──────────────────────────────────────────────────────────
+const SPOTIFY_CLIENT_ID     = 'bcfd468cdf3d49dbba48e3f9af390377';
+const SPOTIFY_CLIENT_SECRET = '6cfccca2e2364ddda4e98cca0840866f';
+
 let _lastSectionIdx = -1;
-let _userPaused = false;
-let _fadeTimer = null;
+let _spotifyToken   = null;
+let _spotifyTokenExp = 0;
 
-function _cancelFade() {
-  if (_fadeTimer !== null) { clearInterval(_fadeTimer); _fadeTimer = null; }
-}
-
-function _fadeIn(targetVol, durationMs) {
-  _cancelFade();
-  if (!ytPlayer || !ytReady) return;
-  ytPlayer.setVolume(0);
-  const steps = Math.max(1, Math.round(durationMs / 50));
-  const inc = targetVol / steps;
-  let cur = 0;
-  _fadeTimer = setInterval(() => {
-    cur += inc;
-    if (cur >= targetVol) { ytPlayer.setVolume(targetVol); _cancelFade(); }
-    else { ytPlayer.setVolume(Math.round(cur)); }
-  }, 50);
-}
-
-function _fadeOut(durationMs, callback) {
-  _cancelFade();
-  if (!ytPlayer || !ytReady) { if (callback) callback(); return; }
-  const startVol = ytPlayer.getVolume();
-  const steps = Math.max(1, Math.round(durationMs / 50));
-  const dec = startVol / steps;
-  let cur = startVol;
-  _fadeTimer = setInterval(() => {
-    cur -= dec;
-    if (cur <= 0) { ytPlayer.setVolume(0); _cancelFade(); if (callback) callback(); }
-    else { ytPlayer.setVolume(Math.round(cur)); }
-  }, 50);
-}
-
-function onYouTubeIframeAPIReady() {
-  ytPlayer = new YT.Player('ytHolder', {
-    height: '1',
-    width: '1',
-    playerVars: { autoplay: 0, controls: 0, disablekb: 1, playsinline: 1 },
-    events: {
-      onReady: () => {
-        ytReady = true;
-        if (pendingPlay) {
-          _doPlay(pendingPlay);
-          pendingPlay = null;
-        }
+async function _getSpotifyToken() {
+  if (_spotifyToken && Date.now() < _spotifyTokenExp) return _spotifyToken;
+  try {
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + btoa(SPOTIFY_CLIENT_ID + ':' + SPOTIFY_CLIENT_SECRET)
       },
-      onStateChange: (e) => {
-        // YT.PlayerState.ENDED = 0
-        if (e.data === 0) {
-          if (_lastCfg && !_userPaused) {
-            const cfg = _lastCfg;
-            _fadeOut(800, () => { if (!_userPaused) _doPlay(cfg); });
-          } else {
-            const btn = document.getElementById('musicToggle');
-            if (btn) { btn.textContent = '▶'; btn.setAttribute('aria-label', 'tocar música'); }
-          }
-        }
-      }
-    }
-  });
+      body: 'grant_type=client_credentials'
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    _spotifyToken    = data.access_token;
+    _spotifyTokenExp = Date.now() + (data.expires_in - 60) * 1000;
+    return _spotifyToken;
+  } catch(e) { return null; }
 }
 
-function _doPlay({ videoId, start, end }) {
-  if (!ytPlayer || !ytReady) return;
-  _cancelFade();
-  _lastCfg = { videoId, start, end };
-  ytPlayer.setVolume(0);
-  ytPlayer.loadVideoById({ videoId: videoId, startSeconds: start, endSeconds: end });
-  const musicPlayer = document.getElementById('musicPlayer');
-  if (musicPlayer) musicPlayer.style.display = 'flex';
-  const btn = document.getElementById('musicToggle');
-  if (btn) { btn.textContent = '⏸'; btn.setAttribute('aria-label', 'pausar música'); }
-  _fadeIn(100, 1500);
+async function _searchSpotify(query) {
+  const token = await _getSpotifyToken();
+  if (!token) return [];
+  try {
+    const res = await fetch(
+      'https://api.spotify.com/v1/search?q=' + encodeURIComponent(query) + '&type=track&limit=8',
+      { headers: { 'Authorization': 'Bearer ' + token } }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.tracks?.items || [];
+  } catch(e) { return []; }
+}
+
+function _loadSpotifyEmbed(uri) {
+  const trackId = uri.replace('spotify:track:', '').replace(/.*open\.spotify\.com\/track\//, '').split('?')[0];
+  if (!trackId) return;
+  const mp = document.getElementById('musicPlayer');
+  const embed = document.getElementById('spotifyEmbed');
+  if (!mp || !embed) return;
+  embed.innerHTML = '';
+  const iframe = document.createElement('iframe');
+  iframe.src = 'https://open.spotify.com/embed/track/' + trackId + '?utm_source=generator&theme=0';
+  iframe.width = '300';
+  iframe.height = '80';
+  iframe.frameBorder = '0';
+  iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+  iframe.loading = 'lazy';
+  embed.appendChild(iframe);
+  mp.style.display = 'block';
 }
 
 function playTrackForSection(sectionIndex) {
   if (!MUSIC_CONFIG.length) return;
   const track = MUSIC_CONFIG.find(t => t.sectionIndex === sectionIndex);
-  if (!track) return;
+  if (!track || !track.spotifyUri) return;
   _lastSectionIdx = sectionIndex;
-  const cfg = { videoId: track.videoId, start: track.start, end: track.end };
-  const label = document.getElementById('musicLabel');
-  if (label) label.textContent = track.label || '';
-  if (!ytReady) {
-    pendingPlay = cfg;
-  } else {
-    _doPlay(cfg);
-  }
+  _loadSpotifyEmbed(track.spotifyUri);
 }
 
 function unlockAndPlay() {
-  // Triggered by first user interaction (the "abrir" click).
-  // Starts playback of section-0 track if configured.
   playTrackForSection(0);
-
   // ─── Section-aware playback via IntersectionObserver ──────────────────────
-  // Registered here (after user interaction) to avoid firing before "abrir".
   if (MUSIC_CONFIG.length) {
     const sections = Array.from(document.querySelectorAll('section.wrap'));
     if (sections.length) {
@@ -661,47 +608,16 @@ function unlockAndPlay() {
         entries.forEach(entry => {
           if (!entry.isIntersecting) return;
           const idx = sections.indexOf(entry.target);
-          if (idx === -1) return;
+          if (idx === -1 || _lastSectionIdx === idx) return;
           const track = MUSIC_CONFIG.find(t => t.sectionIndex === idx);
           if (!track) return;
-          // ignora se já é a seção atual tocando ou pausada pelo usuário
-          if (_lastSectionIdx === idx && (ytPlayer?.getPlayerState() === 1 || _userPaused)) return;
-          // seção com track entrou: fade out do atual (se houver) depois toca novo
-          if (_lastCfg && !_userPaused) {
-            _fadeOut(800, () => { _userPaused = false; playTrackForSection(idx); });
-          } else if (!_userPaused) {
-            playTrackForSection(idx);
-          }
+          playTrackForSection(idx);
         });
       }, { threshold: 0.4 });
       sections.forEach(s => sectionObs.observe(s));
     }
   }
 }
-
-// ─── Music toggle button ─────────────────────────────────────────────────────
-(function() {
-  const btn = document.getElementById('musicToggle');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    if (!ytPlayer || !ytReady) return;
-    const state = ytPlayer.getPlayerState();
-    // YT.PlayerState.PLAYING = 1
-    if (state === 1) {
-      _cancelFade();
-      _userPaused = true;
-      ytPlayer.pauseVideo();
-      btn.textContent = '▶';
-      btn.setAttribute('aria-label', 'tocar música');
-    } else {
-      _userPaused = false;
-      ytPlayer.playVideo();
-      _fadeIn(100, 800);
-      btn.textContent = '⏸';
-      btn.setAttribute('aria-label', 'pausar música');
-    }
-  });
-})();
 
 // ─── End music player ────────────────────────────────────────────────────────
 
@@ -1449,62 +1365,98 @@ function _buildMusicSectionSelect() {
     opt.textContent = (i+1) + '. ' + title;
     sel.appendChild(opt);
   });
-}
-
-function _extractYtId(url) {
-  try {
-    const u = new URL(url.includes('://') ? url : 'https://' + url);
-    if (u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('?')[0];
-    if (u.pathname.includes('/shorts/')) return u.pathname.split('/shorts/')[1].split('?')[0];
-    return u.searchParams.get('v') || '';
-  } catch(e) {
-    const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
-    return m ? m[1] : '';
+  const container = document.getElementById('desktopMusicSearch');
+  if (container) {
+    _buildSpotifySearch(0, container);
+    sel.addEventListener('change', () => {
+      _buildSpotifySearch(parseInt(sel.value), container);
+    });
   }
 }
 
-(function() {
-  const btn = document.getElementById('saveMusicBtn');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    const url   = document.getElementById('musicUrl')?.value?.trim() || '';
-    const start = parseInt(document.getElementById('musicStart')?.value || '0') || 0;
-    const end   = parseInt(document.getElementById('musicEnd')?.value  || '0') || 0;
-    const idx   = parseInt(document.getElementById('musicSection')?.value || '0');
-    if (!url) { alert('cole um link do YouTube 🎵'); return; }
-    const videoId = _extractYtId(url);
-    if (!videoId) { alert('link inválido 🙈 — usa o link completo do vídeo'); return; }
-    const sections = document.querySelectorAll('section.wrap');
-    const label = sections[idx]?.querySelector('.chap-h')?.textContent?.trim() || ('seção ' + (idx+1));
-    const entry = { sectionIndex: idx, videoId, start, end, label };
-    const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === idx);
-    if (pos >= 0) { MUSIC_CONFIG[pos] = entry; } else { MUSIC_CONFIG.push(entry); }
-    saveAll();
-  });
-})();
+function _buildSpotifySearch(sectionIdx, container) {
+  container.innerHTML = '';
 
-(function() {
-  const btn = document.getElementById('removeMusicBtn');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    const idx = parseInt(document.getElementById('musicSection')?.value || '0');
-    const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === idx);
-    if (pos === -1) { alert('essa seção não tem música configurada 🤷'); return; }
-    MUSIC_CONFIG.splice(pos, 1);
-    if (_lastSectionIdx === idx && _lastCfg) {
-      _fadeOut(800, () => {
-        if (ytPlayer && ytReady) ytPlayer.pauseVideo();
+  const existing = sectionIdx >= 0 ? MUSIC_CONFIG.find(t => t.sectionIndex === sectionIdx) : null;
+  if (existing?.label) {
+    const cur = document.createElement('p');
+    cur.style.cssText = 'font-size:.8rem;opacity:.6;margin-bottom:6px';
+    cur.textContent = '▶ ' + existing.label;
+    container.appendChild(cur);
+  }
+
+  const searchInp = document.createElement('input');
+  searchInp.type = 'text';
+  searchInp.placeholder = 'buscar música no Spotify...';
+  searchInp.style.cssText = 'width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);color:var(--cream);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:6px 9px;font-family:Spectral,serif;font-size:.9rem;margin-bottom:8px';
+  container.appendChild(searchInp);
+
+  const results = document.createElement('div');
+  results.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+  container.appendChild(results);
+
+  let _debounce = null;
+  searchInp.addEventListener('input', () => {
+    clearTimeout(_debounce);
+    _debounce = setTimeout(async () => {
+      const q = searchInp.value.trim();
+      if (!q) { results.innerHTML = ''; return; }
+      results.innerHTML = '<p style="opacity:.5;font-size:.85rem">buscando...</p>';
+      const tracks = await _searchSpotify(q);
+      results.innerHTML = '';
+      if (!tracks.length) { results.innerHTML = '<p style="opacity:.5;font-size:.85rem">nenhum resultado</p>'; return; }
+      tracks.forEach(tr => {
+        const card = document.createElement('div');
+        card.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px;background:rgba(255,255,255,.05);border-radius:8px;cursor:pointer;border:1px solid rgba(232,166,160,.12)';
+        card.addEventListener('mouseenter', () => card.style.background = 'rgba(232,166,160,.12)');
+        card.addEventListener('mouseleave', () => card.style.background = 'rgba(255,255,255,.05)');
+        const img = document.createElement('img');
+        img.src = tr.album?.images?.[2]?.url || '';
+        img.style.cssText = 'width:48px;height:48px;border-radius:4px;object-fit:cover;flex-shrink:0';
+        img.alt = '';
+        const info = document.createElement('div');
+        info.style.cssText = 'flex:1;min-width:0';
+        const titleEl = document.createElement('div');
+        titleEl.style.cssText = 'font-family:Caveat,cursive;font-size:.95rem;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        titleEl.textContent = tr.name;
+        const artistEl = document.createElement('div');
+        artistEl.style.cssText = 'font-size:.75rem;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        artistEl.textContent = tr.artists?.map(a => a.name).join(', ') || '';
+        info.appendChild(titleEl); info.appendChild(artistEl);
+        card.appendChild(img); card.appendChild(info);
+        card.addEventListener('click', () => {
+          const label = tr.name + ' — ' + (tr.artists?.map(a => a.name).join(', ') || '');
+          const entry = { sectionIndex: sectionIdx, spotifyUri: tr.uri, label };
+          const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === sectionIdx);
+          if (pos >= 0) { MUSIC_CONFIG[pos] = entry; } else { MUSIC_CONFIG.push(entry); }
+          _loadSpotifyEmbed(tr.uri);
+          saveAll();
+          _showSaveToast('🎵 ' + tr.name);
+          _buildSpotifySearch(sectionIdx, container);
+        });
+        results.appendChild(card);
+      });
+    }, 400);
+  });
+
+  if (existing?.spotifyUri) {
+    const remBtn = document.createElement('button');
+    remBtn.style.cssText = 'display:block;width:100%;padding:7px;background:none;border:1px solid rgba(232,166,160,.25);color:var(--rose);border-radius:8px;font-family:Caveat,cursive;font-size:.95rem;cursor:pointer;margin-top:6px';
+    remBtn.textContent = '🗑 remover música';
+    remBtn.addEventListener('click', () => {
+      const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === sectionIdx);
+      if (pos >= 0) { MUSIC_CONFIG.splice(pos, 1); }
+      if (_lastSectionIdx === sectionIdx) {
         const mp = document.getElementById('musicPlayer');
         if (mp) mp.style.display = 'none';
-        _lastCfg = null;
         _lastSectionIdx = -1;
-        const tb = document.getElementById('musicToggle');
-        if (tb) { tb.textContent = '▶'; tb.setAttribute('aria-label', 'tocar música'); }
-      });
-    }
-    saveAll();
-  });
-})();
+      }
+      saveAll();
+      _buildSpotifySearch(sectionIdx, container);
+    });
+    container.appendChild(remBtn);
+  }
+}
 
 // ─── Block system ────────────────────────────────────────────────────────────
 let _blocks = [];
@@ -1749,6 +1701,7 @@ async function initBlocks(){
       const raw=localStorage.getItem('bobaiona_shared');
       if(raw) try{const d=JSON.parse(raw);if(d.blocks?.length)blocks=_migrateFlat(d.blocks);if(d.music)MUSIC_CONFIG=d.music;}catch(e){}
     }
+    MUSIC_CONFIG=MUSIC_CONFIG.filter(c=>c.spotifyUri);
     const prefs=await supaLoad(currentVersion+'_prefs');
     if(prefs){applyPrefs(prefs);_buildThemePicker();}
     if(prefs) try{localStorage.setItem('bobaiona_'+currentVersion+'_prefs',JSON.stringify(prefs));}catch(e){}
@@ -2364,42 +2317,7 @@ function _openSheet(id){
     } else if(tabId==='music'){
       const sec=document.querySelector('[data-block-id="'+id+'"]');
       const secIdx=sec?Array.from(document.querySelectorAll('section.wrap')).indexOf(sec):-1;
-      const existing=secIdx>=0?MUSIC_CONFIG.find(t=>t.sectionIndex===secIdx):null;
-
-      const lbl=document.createElement('p'); lbl.style.cssText='font-size:.85rem;opacity:.65;margin-bottom:6px';
-      lbl.textContent='link do YouTube:'; tabBody.appendChild(lbl);
-
-      const urlI=mkInp(existing?'https://youtube.com/watch?v='+existing.videoId:'','youtube.com/watch?v=...');
-      tabBody.appendChild(urlI);
-
-      const trow=document.createElement('div'); trow.style.cssText='display:flex;gap:6px;margin-bottom:6px';
-      const startI=mkInp(existing?.start||'','início (seg)',true); startI.style.flex='1';
-      const endI  =mkInp(existing?.end  ||'','fim (seg)',  true); endI.style.flex='1';
-      trow.appendChild(startI); trow.appendChild(endI); tabBody.appendChild(trow);
-
-      const saveM=document.createElement('button'); saveM.className='bs-apply'; saveM.textContent='💾 salvar música';
-      saveM.addEventListener('click',()=>{
-        if(secIdx<0){alert('seção não encontrada');return;}
-        const vid=_extractYtId(urlI.value.trim());
-        if(!vid){alert('link inválido');return;}
-        const label=blk.data.title||('seção '+(secIdx+1));
-        const entry={sectionIndex:secIdx,videoId:vid,start:parseInt(startI.value)||0,end:parseInt(endI.value)||0,label};
-        const pos=MUSIC_CONFIG.findIndex(c=>c.sectionIndex===secIdx);
-        if(pos>=0) MUSIC_CONFIG[pos]=entry; else MUSIC_CONFIG.push(entry);
-        saveAll();
-      });
-      tabBody.appendChild(saveM);
-
-      if(existing){
-        const remM=document.createElement('button');
-        remM.style.cssText='display:block;width:100%;padding:8px;background:none;border:1px solid rgba(232,166,160,.25);color:var(--rose);border-radius:8px;font-family:Caveat,cursive;font-size:.95rem;cursor:pointer;margin-top:4px';
-        remM.textContent='🗑 remover música';
-        remM.addEventListener('click',()=>{
-          const pos=MUSIC_CONFIG.findIndex(c=>c.sectionIndex===secIdx);
-          if(pos>=0){MUSIC_CONFIG.splice(pos,1);saveAll();}
-        });
-        tabBody.appendChild(remM);
-      }
+      _buildSpotifySearch(secIdx, tabBody);
 
     } else if(tabId==='style'){
       const sty=blk.data.style||{};
