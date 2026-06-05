@@ -924,18 +924,43 @@ async function supaSave(ver, payload) {
 (async function _checkFreshness() {
   if (!_SUPA_HEADERS) return;
   try {
-    const res = await fetch(
-      SUPABASE_URL + '/rest/v1/paginas?id=eq.shared&select=atualizado_em',
-      { headers: _SUPA_HEADERS }
-    );
-    if (!res.ok) return;
-    const rows = await res.json();
-    const remote = rows[0]?.atualizado_em;
-    if (!remote) return;
-    const local = localStorage.getItem('bobaiona_content_ts');
-    // Grava antes de recarregar para não entrar em loop
-    localStorage.setItem('bobaiona_content_ts', remote);
-    if (local && remote > local) location.reload(true);
+    const ver = localStorage.getItem('bobaiona_version') || 'caze';
+    const [sharedRes, prefsRes] = await Promise.all([
+      fetch(SUPABASE_URL + '/rest/v1/paginas?id=eq.shared&select=atualizado_em', { headers: _SUPA_HEADERS }),
+      fetch(SUPABASE_URL + '/rest/v1/paginas?id=eq.' + ver + '_prefs&select=atualizado_em', { headers: _SUPA_HEADERS })
+    ]);
+    let needReload = false;
+    if (sharedRes.ok) {
+      const rows = await sharedRes.json();
+      const remote = rows[0]?.atualizado_em;
+      if (remote) {
+        const local = localStorage.getItem('bobaiona_content_ts');
+        localStorage.setItem('bobaiona_content_ts', remote);
+        if (local && remote > local) needReload = true;
+      }
+    }
+    if (prefsRes.ok) {
+      const rows = await prefsRes.json();
+      const remote = rows[0]?.atualizado_em;
+      if (remote) {
+        const local = localStorage.getItem('bobaiona_prefs_ts');
+        localStorage.setItem('bobaiona_prefs_ts', remote);
+        if (local && remote > local) needReload = true;
+      }
+    }
+    if (needReload) {
+      if (editMode) {
+        if (!document.getElementById('_updateToast')) {
+          const toast = document.createElement('div');
+          toast.id = '_updateToast';
+          toast.style.cssText = "position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--plum);color:var(--cream);border:1px solid var(--rose);padding:12px 20px;border-radius:20px;z-index:1400;font-family:'Caveat',cursive;font-size:1.1rem;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5)";
+          toast.innerHTML = '🔄 conteúdo novo disponível — salve e recarregue pra ver <button style="margin-left:8px;background:var(--rose);color:#fff;border:0;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:inherit;font-size:.9rem" onclick="location.reload(true)">recarregar</button>';
+          document.body.appendChild(toast);
+        }
+      } else {
+        location.reload(true);
+      }
+    }
   } catch(e) {}
 })();
 
