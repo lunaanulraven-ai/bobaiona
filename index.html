@@ -173,6 +173,8 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 #blkPanel h3{font-family:'Caveat',cursive;font-size:1.25rem;color:var(--gold)}
 #blkPanel label{font-size:.8rem;opacity:.6;display:block;margin:5px 0 2px}
 #blkPanel input[type="text"],#blkPanel input[type="url"],#blkPanel input[type="number"],#blkPanel textarea,#blkPanel select{width:100%;background:rgba(255,255,255,.06);color:var(--cream);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:5px 9px;font-size:.88rem;font-family:'Spectral',serif;box-sizing:border-box}
+#blkPanel select,#blkSheet select{background:rgba(22,12,20,.97);color:var(--cream);border:1px solid rgba(232,166,160,.25)}
+#blkPanel select option,#blkSheet select option{background:#1a0e16;color:var(--cream)}
 #blkPanel textarea{min-height:72px;resize:vertical}
 #blkPanel .bp-apply{width:100%;padding:8px;background:var(--rose);color:#fff;border:0;border-radius:9px;font-family:'Caveat',cursive;font-size:1.15rem;cursor:pointer;margin-top:2px;box-sizing:border-box}
 #blkPanel .bp-apply:hover{opacity:.86}
@@ -1097,7 +1099,7 @@ function _mkFontPicker(initialVal, onChange) {
   wrap.appendChild(btn);
 
   const drop = document.createElement('div');
-  drop.style.cssText = 'display:none;position:absolute;z-index:1000;top:calc(100% + 4px);left:0;right:0;min-width:200px;background:var(--bg2);border:1px solid rgba(232,166,160,.22);border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.6)';
+  drop.style.cssText = 'display:none;position:absolute;z-index:1000;top:calc(100% + 4px);left:0;right:0;min-width:200px;background:rgba(22,12,20,.97);border:1px solid rgba(232,166,160,.25);border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.6)';
 
   const srch = document.createElement('input');
   srch.type = 'text';
@@ -1137,18 +1139,19 @@ function _mkFontPicker(initialVal, onChange) {
       return;
     }
 
-    matches.forEach(f => {
+    matches.forEach((f, i) => {
       const opt = document.createElement('button');
       opt.type = 'button';
       opt.textContent = f;
+      opt.dataset.font = f;
       opt.style.cssText = 'display:block;width:100%;text-align:left;padding:7px 12px;background:'+(f===wrap._value?'rgba(214,114,111,.22)':'none')+';border:0;color:var(--cream);cursor:pointer;font-size:1rem';
+      if (i < 10) { _loadGFont(f); opt.style.fontFamily = "'"+f+"',inherit"; opt.dataset.fl='1'; }
       opt.addEventListener('mouseenter', () => {
         _loadGFont(f);
         opt.style.fontFamily = "'"+f+"',inherit";
         if (f !== wrap._value) opt.style.background = 'rgba(232,166,160,.15)';
       });
       opt.addEventListener('mouseleave', () => {
-        opt.style.fontFamily = 'inherit';
         opt.style.background = f===wrap._value ? 'rgba(214,114,111,.22)' : 'none';
       });
       opt.addEventListener('click', () => {
@@ -1168,6 +1171,17 @@ function _mkFontPicker(initialVal, onChange) {
       hint.textContent = 'refine a busca pra ver mais';
       list.appendChild(hint);
     }
+
+    list.onscroll = () => {
+      const bot = list.scrollTop + list.clientHeight;
+      list.querySelectorAll('[data-font]:not([data-fl])').forEach(btn => {
+        if (btn.offsetTop < bot + 80) {
+          _loadGFont(btn.dataset.font);
+          btn.style.fontFamily = "'"+btn.dataset.font+"',inherit";
+          btn.dataset.fl = '1';
+        }
+      });
+    };
   };
 
   drop.appendChild(list);
