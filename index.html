@@ -801,6 +801,7 @@ const exportBtn=document.getElementById('exportBtn');
 const importFile=document.getElementById('importFile');
 
 let editMode=false;
+let _freshToast=null;
 const editableSelectors=['.story','.chap-h','.chap-date','.pull','.kicker','.hero h1','.polaroid .cap','.menu li .dish','.menu li .tag','.stat .big','.stat .lab','.sig','.heartbeat'];
 
 function toggleEditor(){
@@ -847,6 +848,7 @@ function toggleEditor(){
     document.querySelectorAll('.blk-tb').forEach(t=>t.remove());
     document.querySelectorAll('[data-block-id]').forEach(el=>{el.removeAttribute('draggable');el.classList.remove('blk-sel');});
     _closePanel();
+    if (_freshToast) { _freshToast.remove(); _freshToast = null; }
   }
 }
 
@@ -950,12 +952,13 @@ async function supaSave(ver, payload) {
     }
     if (needReload) {
       if (editMode) {
-        if (!document.getElementById('_updateToast')) {
+        if (!_freshToast) {
           const toast = document.createElement('div');
           toast.id = '_updateToast';
           toast.style.cssText = "position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--plum);color:var(--cream);border:1px solid var(--rose);padding:12px 20px;border-radius:20px;z-index:1400;font-family:'Caveat',cursive;font-size:1.1rem;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5)";
           toast.innerHTML = '🔄 conteúdo novo disponível — salve e recarregue pra ver <button style="margin-left:8px;background:var(--rose);color:#fff;border:0;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:inherit;font-size:.9rem" onclick="location.reload(true)">recarregar</button>';
           document.body.appendChild(toast);
+          _freshToast = toast;
         }
       } else {
         location.reload(true);
@@ -1499,7 +1502,7 @@ function _extractYtId(url) {
         if (tb) { tb.textContent = '▶'; tb.setAttribute('aria-label', 'tocar música'); }
       });
     }
-    alert('música removida 🎵 — clique em "salvar tudo" pra sincronizar');
+    saveAll();
   });
 })();
 
@@ -2176,7 +2179,7 @@ function _buildFields(blk){
     w._styleFont._setValue('');
     w._styleSz.value='';
     _reRender();saveAll();
-    if(!_isMobile()) _openPanel(blk.id);
+    if(!_isMobile()) _refreshPanel(blk.id);
   });
   stSec.appendChild(rstBtn);
   w.appendChild(stSec);
@@ -2371,7 +2374,7 @@ function _openSheet(id){
         remM.textContent='🗑 remover música';
         remM.addEventListener('click',()=>{
           const pos=MUSIC_CONFIG.findIndex(c=>c.sectionIndex===secIdx);
-          if(pos>=0){MUSIC_CONFIG.splice(pos,1);alert('música removida');}
+          if(pos>=0){MUSIC_CONFIG.splice(pos,1);saveAll();}
         });
         tabBody.appendChild(remM);
       }
