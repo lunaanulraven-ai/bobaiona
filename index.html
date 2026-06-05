@@ -519,11 +519,10 @@ const EDIT_PASSWORD     = 'bobaiona'; // troque por uma senha sua
 
 let _editAuth = false;
 
-// ─── Music config (lido de bobaiona_data_<ver>.music) ───────────────────────
+// ─── Music config (lido de bobaiona_shared) ─────────────────────────────────
 let MUSIC_CONFIG = (function() {
   try {
-    const ver = localStorage.getItem('bobaiona_version') || 'caze';
-    const raw = localStorage.getItem('bobaiona_data_' + ver);
+    const raw = localStorage.getItem('bobaiona_shared');
     return (raw ? JSON.parse(raw) : null)?.music || [];
   } catch(e) { return []; }
 })();
@@ -693,14 +692,15 @@ openBtn.addEventListener('click',()=>{
   const main=document.getElementById('main'); if(main){ main.focus(); }
   unlockAndPlay();
   // Load fresh content from Supabase (non-blocking)
-  supaLoad(currentVersion).then(data => {
+  supaLoad('shared').then(data => {
     if (!data) return;
-    applyEditable(data.texts);
-    applyPhotos(data.photos);
-    if (data.theme) applyTheme(data.theme);
     if (data.music) MUSIC_CONFIG = data.music;
-    try { localStorage.setItem('bobaiona_data_' + currentVersion, JSON.stringify(data)); } catch(e) {}
-    _buildThemePicker();
+    try { localStorage.setItem('bobaiona_shared', JSON.stringify(data)); } catch(e) {}
+  });
+  supaLoad(currentVersion + '_prefs').then(prefs => {
+    if (!prefs) return;
+    if (prefs.theme) { applyTheme(prefs.theme); _buildThemePicker(); }
+    try { localStorage.setItem('bobaiona_' + currentVersion + '_prefs', JSON.stringify(prefs)); } catch(e) {}
   });
 });
 
@@ -832,23 +832,23 @@ editToggle.addEventListener('click',toggleEditor);
 
 function saveLocal(){
   const theme = localStorage.getItem('bobaiona_theme_' + currentVersion) || 'padrao';
-  const payload = { texts: gatherEditable(), photos: gatherPhotos(), music: MUSIC_CONFIG, theme };
   try {
-    localStorage.setItem('bobaiona_data_' + currentVersion, JSON.stringify(payload));
+    localStorage.setItem('bobaiona_shared', JSON.stringify({ blocks: _blocks, music: MUSIC_CONFIG }));
+    localStorage.setItem('bobaiona_' + currentVersion + '_prefs', JSON.stringify({ theme }));
     alert('Salvo localmente');
   } catch(e) { alert('Erro ao salvar: ' + e.message); }
 }
 
 function loadLocal(){
   try {
-    const raw = localStorage.getItem('bobaiona_data_' + currentVersion);
-    if (!raw) return alert('Nenhum salvamento local encontrado');
+    const rawShared = localStorage.getItem('bobaiona_shared');
+    if (!rawShared) return alert('Nenhum salvamento local encontrado');
     if (!confirm('Carregar versão salva localmente?')) return;
-    const data = JSON.parse(raw);
-    applyEditable(data.texts);
-    applyPhotos(data.photos);
-    if (data.music) MUSIC_CONFIG = data.music;
-    if (data.theme) applyTheme(data.theme);
+    const shared = JSON.parse(rawShared);
+    if (shared.music) MUSIC_CONFIG = shared.music;
+    if (shared.blocks?.length) { _blocks = _migrateFlat(shared.blocks); renderBlocks(_blocks); _reinitDOM(); }
+    const rawPrefs = localStorage.getItem('bobaiona_' + currentVersion + '_prefs');
+    if (rawPrefs) { const prefs = JSON.parse(rawPrefs); if (prefs.theme) applyTheme(prefs.theme); }
     _buildThemePicker();
   } catch(e) { alert('Erro ao carregar: ' + e.message); }
 }
@@ -906,11 +906,17 @@ function _showSaveToast(msg){
 
 async function saveAll() {
   const theme = localStorage.getItem('bobaiona_theme_' + currentVersion) || 'padrao';
-  const payload = { texts: gatherEditable(), photos: gatherPhotos(), music: MUSIC_CONFIG, theme, blocks: _blocks };
-  try { localStorage.setItem('bobaiona_data_' + currentVersion, JSON.stringify(payload)); } catch(e) {}
+  const sharedPayload = { blocks: _blocks, music: MUSIC_CONFIG };
+  const prefsPayload = { theme };
+  try { localStorage.setItem('bobaiona_shared', JSON.stringify(sharedPayload)); } catch(e) {}
+  try { localStorage.setItem('bobaiona_' + currentVersion + '_prefs', JSON.stringify(prefsPayload)); } catch(e) {}
   const status = document.getElementById('syncStatus');
   if (status) status.textContent = 'salvando...';
-  const ok = await supaSave(currentVersion, payload);
+  const [okShared, okPrefs] = await Promise.all([
+    supaSave('shared', sharedPayload),
+    supaSave(currentVersion + '_prefs', prefsPayload)
+  ]);
+  const ok = okShared === null ? null : (okShared && okPrefs);
   const msg = ok === null ? '💾 salvo aqui (sync desativado)' : ok ? '☁️ sincronizado!' : '⚠️ salvo aqui (sem rede)';
   if (_isMobile()) _showSaveToast(msg);
   if (status) {
@@ -1013,42 +1019,26 @@ function applyTheme(themeKey) {
 
 async function switchVersion(ver) {
   if (ver === currentVersion) return;
-  const savePayload = { texts: gatherEditable(), photos: gatherPhotos(), music: MUSIC_CONFIG,
-    theme: localStorage.getItem('bobaiona_theme_' + currentVersion) || 'padrao' };
-  try { localStorage.setItem('bobaiona_data_' + currentVersion, JSON.stringify(savePayload)); } catch(e) {}
   currentVersion = ver;
   localStorage.setItem('bobaiona_version', currentVersion);
 
-  let data = null;
-  let blocks = null;
-  try {
-    data = await supaLoad(currentVersion);
-    if (data) {
-      try { localStorage.setItem('bobaiona_data_' + currentVersion, JSON.stringify(data)); } catch(e) {}
-    } else {
-      const raw = localStorage.getItem('bobaiona_data_' + currentVersion);
-      if (raw) data = JSON.parse(raw);
-    }
-    if (data?.blocks?.length) blocks = _migrateFlat(data.blocks);
-  } catch(e) {}
-
-  if (!blocks) blocks = parsePageToBlocks();
-  _blocks = blocks;
-
-  applyEditable(_BASE_TEXTS);
+  // Blocos são shared — só realinha autores para a nova versão
   renderBlocks(_blocks);
   _reinitDOM();
 
-  if (data) {
-    applyEditable(data.texts);
-    applyPhotos(data.photos);
-    MUSIC_CONFIG = data.music || [];
-    applyTheme(data.theme || VERSION_META[currentVersion]?.theme || 'padrao');
-  } else {
-    MUSIC_CONFIG = [];
-    applyTheme(VERSION_META[currentVersion]?.theme || 'padrao');
-  }
+  // Carrega prefs da nova versão
+  let prefs = null;
+  try {
+    prefs = await supaLoad(currentVersion + '_prefs');
+    if (prefs) {
+      try { localStorage.setItem('bobaiona_' + currentVersion + '_prefs', JSON.stringify(prefs)); } catch(e) {}
+    } else {
+      const raw = localStorage.getItem('bobaiona_' + currentVersion + '_prefs');
+      if (raw) prefs = JSON.parse(raw);
+    }
+  } catch(e) {}
 
+  applyTheme(prefs?.theme || VERSION_META[currentVersion]?.theme || 'padrao');
   if (editMode) _rebuildToolbars();
   _markActiveVersionBtn();
   _buildThemePicker();
@@ -1082,18 +1072,13 @@ document.getElementById('main').addEventListener('click', (e) => {
   switchVersion(btn.dataset.ver);
 });
 
-// ─── Init: apply saved data for current version ──────────────────────────────
+// ─── Init: aplica tema salvo para a versão atual ─────────────────────────────
 (function initVersionTheme() {
   try {
-    const raw = localStorage.getItem('bobaiona_data_' + currentVersion);
-    const data = raw ? JSON.parse(raw) : null;
-    const theme = data?.theme || localStorage.getItem('bobaiona_theme_' + currentVersion) || 'padrao';
+    const raw = localStorage.getItem('bobaiona_' + currentVersion + '_prefs');
+    const prefs = raw ? JSON.parse(raw) : null;
+    const theme = prefs?.theme || localStorage.getItem('bobaiona_theme_' + currentVersion) || 'padrao';
     applyTheme(theme);
-    if (data) {
-      applyEditable(data.texts);
-      applyPhotos(data.photos);
-      if (data.music) MUSIC_CONFIG = data.music;
-    }
   } catch(e) {}
   _markActiveVersionBtn();
   _buildThemePicker();
@@ -1377,10 +1362,36 @@ function _reinitDOM() {
   _initVideoDOM();
 }
 
+async function _migrateToShared(){
+  const shared=await supaLoad('shared');
+  if(shared) return; // já migrado
+  let cazeData=await supaLoad('caze');
+  if(!cazeData){try{const r=localStorage.getItem('bobaiona_data_caze');if(r)cazeData=JSON.parse(r);}catch(e){}}
+  let vickData=await supaLoad('vick');
+  if(!vickData){try{const r=localStorage.getItem('bobaiona_data_vick');if(r)vickData=JSON.parse(r);}catch(e){}}
+  const sharedPayload={blocks:cazeData?.blocks||null,music:cazeData?.music||[]};
+  await supaSave('shared',sharedPayload);
+  try{localStorage.setItem('bobaiona_shared',JSON.stringify(sharedPayload));}catch(e){}
+  if(cazeData?.theme){await supaSave('caze_prefs',{theme:cazeData.theme});try{localStorage.setItem('bobaiona_caze_prefs',JSON.stringify({theme:cazeData.theme}));}catch(e){}}
+  if(vickData?.theme){await supaSave('vick_prefs',{theme:vickData.theme});try{localStorage.setItem('bobaiona_vick_prefs',JSON.stringify({theme:vickData.theme}));}catch(e){}}
+}
+
 async function initBlocks(){
+  await _migrateToShared();
   let blocks=null;
-  const supaData=await supaLoad(currentVersion);
-  if(supaData?.blocks?.length) blocks=_migrateFlat(supaData.blocks);
+  const supaData=await supaLoad('shared');
+  if(supaData){
+    if(supaData.blocks?.length) blocks=_migrateFlat(supaData.blocks);
+    if(supaData.music) MUSIC_CONFIG=supaData.music;
+    try{localStorage.setItem('bobaiona_shared',JSON.stringify(supaData));}catch(e){}
+  } else {
+    const raw=localStorage.getItem('bobaiona_shared');
+    if(raw) try{const d=JSON.parse(raw);if(d.blocks?.length)blocks=_migrateFlat(d.blocks);if(d.music)MUSIC_CONFIG=d.music;}catch(e){}
+  }
+  const prefs=await supaLoad(currentVersion+'_prefs');
+  if(prefs?.theme){applyTheme(prefs.theme);_buildThemePicker();}
+  if(prefs) try{localStorage.setItem('bobaiona_'+currentVersion+'_prefs',JSON.stringify(prefs));}catch(e){}
+  else{const raw=localStorage.getItem('bobaiona_'+currentVersion+'_prefs');if(raw)try{const p=JSON.parse(raw);if(p.theme){applyTheme(p.theme);_buildThemePicker();}}catch(e){}}
   if(!blocks) blocks=parsePageToBlocks();
   _blocks=blocks;
   renderBlocks(_blocks);
