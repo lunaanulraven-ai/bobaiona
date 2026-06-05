@@ -277,11 +277,13 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
     <hr />
     <div class="editor-section">
       <h4>✍️ fontes</h4>
-      <p style="font-size:.75rem;opacity:.6;margin-bottom:4px">nome exato do Google Fonts (ex: Playfair Display)</p>
-      <input id="fontTitle" placeholder="fonte dos títulos (ex: Fraunces)" />
-      <input id="fontBody"  placeholder="fonte do texto (ex: Spectral)" />
-      <input id="fontScript" placeholder="fonte cursiva (ex: Caveat)" />
-      <button id="applyFontsBtn" style="margin-top:4px">aplicar fontes</button>
+      <label style="font-size:.75rem;opacity:.6;display:block;margin-bottom:3px">títulos</label>
+      <div id="fontTitle"></div>
+      <label style="font-size:.75rem;opacity:.6;display:block;margin:8px 0 3px">texto</label>
+      <div id="fontBody"></div>
+      <label style="font-size:.75rem;opacity:.6;display:block;margin:8px 0 3px">cursiva / assinaturas</label>
+      <div id="fontScript"></div>
+      <button id="applyFontsBtn" style="margin-top:10px">💾 salvar fontes</button>
     </div>
     <hr />
     <div class="editor-section">
@@ -923,9 +925,9 @@ function _showSaveToast(msg){
 }
 
 function _gatherFonts() {
-  const title  = document.getElementById('fontTitle')?.value.trim()  || '';
-  const body   = document.getElementById('fontBody')?.value.trim()   || '';
-  const script = document.getElementById('fontScript')?.value.trim() || '';
+  const title  = _gFontPickers.title?._value  || '';
+  const body   = _gFontPickers.body?._value   || '';
+  const script = _gFontPickers.script?._value || '';
   return (title || body || script) ? { title, body, script } : null;
 }
 
@@ -1053,16 +1055,144 @@ function _loadGFont(name) {
   document.head.appendChild(link);
 }
 
+const _GFONTS = [
+  'Playfair Display','Cormorant Garamond','Libre Baskerville','Lora','Merriweather',
+  'EB Garamond','Fraunces','Spectral','DM Serif Display','Abril Fatface',
+  'Della Respira','Bodoni Moda',
+  'Caveat','Dancing Script','Pacifico','Sacramento','Great Vibes','Satisfy',
+  'Pinyon Script','Allura','Alex Brush','Yellowtail','Kaushan Script','Lobster','Parisienne',
+  'Inter','Poppins','Nunito','Quicksand','Raleway','Josefin Sans','Montserrat',
+  'DM Sans','Plus Jakarta Sans',
+  'Cinzel','Uncial Antiqua','MedievalSharp','Philosopher',
+];
+let _fontListLoaded = false;
+function _loadFontList() {
+  if (document.getElementById('gfont-list')) return;
+  const link = document.createElement('link');
+  link.id = 'gfont-list'; link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?' +
+    _GFONTS.map(f=>'family='+encodeURIComponent(f)+':wght@400;600').join('&') + '&display=swap';
+  document.head.appendChild(link);
+}
+
+let _gFontPickers = {};
+
+function _mkFontPicker(initialVal, onChange) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;width:100%';
+  wrap._value = initialVal || '';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.style.cssText = 'width:100%;text-align:left;padding:7px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(232,166,160,.25);border-radius:8px;color:var(--cream);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px;box-sizing:border-box';
+
+  const btnTxt = document.createElement('span');
+  btnTxt.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.95rem';
+  if (initialVal) { _loadGFont(initialVal); btnTxt.style.fontFamily = "'"+initialVal+"',inherit"; }
+  btnTxt.textContent = initialVal || 'padrão';
+  btn.appendChild(btnTxt);
+  btn.insertAdjacentHTML('beforeend','<span style="opacity:.5;flex-shrink:0">▾</span>');
+  wrap.appendChild(btn);
+
+  const drop = document.createElement('div');
+  drop.style.cssText = 'display:none;position:absolute;z-index:1000;top:calc(100% + 4px);left:0;right:0;min-width:200px;background:var(--bg2);border:1px solid rgba(232,166,160,.22);border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.6)';
+
+  const srch = document.createElement('input');
+  srch.type = 'text';
+  srch.placeholder = '🔍 buscar...';
+  srch.style.cssText = 'width:100%;box-sizing:border-box;padding:8px 10px;background:rgba(0,0,0,.25);border:0;border-bottom:1px solid rgba(232,166,160,.15);color:var(--cream);font-size:.85rem;outline:none';
+  drop.appendChild(srch);
+
+  const list = document.createElement('div');
+  list.style.cssText = 'max-height:220px;overflow-y:auto;padding:4px 0';
+
+  const renderList = (filter) => {
+    list.innerHTML = '';
+    const lc = (filter||'').toLowerCase();
+    const defOpt = document.createElement('button');
+    defOpt.type = 'button';
+    defOpt.textContent = '— padrão';
+    defOpt.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 12px;background:'+(!wrap._value?'rgba(214,114,111,.18)':'none')+';border:0;color:var(--soft);cursor:pointer;font-size:.85rem';
+    defOpt.addEventListener('click', () => {
+      wrap._value = '';
+      btnTxt.textContent = 'padrão';
+      btnTxt.style.fontFamily = 'inherit';
+      drop.style.display = 'none';
+      if (onChange) onChange('');
+    });
+    list.appendChild(defOpt);
+    _GFONTS.filter(f => !lc || f.toLowerCase().includes(lc)).forEach(f => {
+      const opt = document.createElement('button');
+      opt.type = 'button';
+      opt.textContent = f;
+      opt.style.cssText = "display:block;width:100%;text-align:left;padding:7px 12px;background:"+(f===wrap._value?'rgba(214,114,111,.22)':'none')+";border:0;color:var(--cream);cursor:pointer;font-size:1rem;font-family:'"+f+"',inherit";
+      opt.addEventListener('click', () => {
+        wrap._value = f;
+        btnTxt.textContent = f;
+        _loadGFont(f);
+        btnTxt.style.fontFamily = "'"+f+"',inherit";
+        drop.style.display = 'none';
+        if (onChange) onChange(f);
+      });
+      list.appendChild(opt);
+    });
+  };
+
+  drop.appendChild(list);
+  wrap.appendChild(drop);
+
+  btn.addEventListener('click', ev => {
+    ev.stopPropagation();
+    if (drop.style.display !== 'none') { drop.style.display = 'none'; return; }
+    if (!_fontListLoaded) { _loadFontList(); _fontListLoaded = true; }
+    drop.style.display = 'block';
+    srch.value = '';
+    renderList('');
+    setTimeout(() => srch.focus(), 50);
+    const closeH = ev2 => {
+      if (!wrap.contains(ev2.target)) { drop.style.display = 'none'; document.removeEventListener('click', closeH); }
+    };
+    document.addEventListener('click', closeH);
+  });
+
+  srch.addEventListener('input', () => renderList(srch.value));
+
+  wrap._setValue = v => {
+    wrap._value = v || '';
+    btnTxt.textContent = v || 'padrão';
+    if (v) { _loadGFont(v); btnTxt.style.fontFamily = "'"+v+"',inherit"; }
+    else btnTxt.style.fontFamily = 'inherit';
+  };
+
+  return wrap;
+}
+
+function _initGlobalFontPickers() {
+  [['Title','title'],['Body','body'],['Script','script']].forEach(([K,k]) => {
+    const container = document.getElementById('font'+K);
+    if (!container || container.dataset.pickerInit) return;
+    container.dataset.pickerInit = '1';
+    const picker = _mkFontPicker(container.dataset.prefill||'', () => {
+      applyFonts({
+        title:  _gFontPickers.title?._value  || '',
+        body:   _gFontPickers.body?._value   || '',
+        script: _gFontPickers.script?._value || '',
+      });
+    });
+    container.appendChild(picker);
+    _gFontPickers[k] = picker;
+  });
+}
+
 function applyFonts(fonts) {
   if (!fonts) return;
   const r = document.documentElement.style;
   if (fonts.title)  { _loadGFont(fonts.title);  r.setProperty('--font-title',  "'" + fonts.title  + "',serif"); }
   if (fonts.body)   { _loadGFont(fonts.body);   r.setProperty('--font-body',   "'" + fonts.body   + "',Georgia,serif"); }
   if (fonts.script) { _loadGFont(fonts.script); r.setProperty('--font-script', "'" + fonts.script + "',cursive"); }
-  // reflect into inputs if panel is open
-  const ft = document.getElementById('fontTitle');  if (ft && fonts.title)  ft.value = fonts.title;
-  const fb = document.getElementById('fontBody');   if (fb && fonts.body)   fb.value = fonts.body;
-  const fs = document.getElementById('fontScript'); if (fs && fonts.script) fs.value = fonts.script;
+  if (_gFontPickers.title  && fonts.title)  _gFontPickers.title._setValue(fonts.title);
+  if (_gFontPickers.body   && fonts.body)   _gFontPickers.body._setValue(fonts.body);
+  if (_gFontPickers.script && fonts.script) _gFontPickers.script._setValue(fonts.script);
 }
 
 const _CLR_VARS = [
@@ -1134,12 +1264,13 @@ function applyPrefs(prefs) {
 }
 
 (function() {
+  _initGlobalFontPickers();
   const btn = document.getElementById('applyFontsBtn');
   if (!btn) return;
   btn.addEventListener('click', () => {
-    const title  = document.getElementById('fontTitle')?.value.trim()  || '';
-    const body   = document.getElementById('fontBody')?.value.trim()   || '';
-    const script = document.getElementById('fontScript')?.value.trim() || '';
+    const title  = _gFontPickers.title?._value  || '';
+    const body   = _gFontPickers.body?._value   || '';
+    const script = _gFontPickers.script?._value || '';
     applyFonts({ title, body, script });
     saveAll();
   });
@@ -1927,7 +2058,7 @@ function _buildFields(blk){
   w._styleClr.style.cssText='width:36px;height:26px;border:0;background:none;cursor:pointer;padding:0;border-radius:4px;flex-shrink:0';
   const clrLbl=document.createElement('span');clrLbl.textContent='cor do texto';clrLbl.style.cssText='font-family:Caveat,cursive;font-size:.85rem;opacity:.65';
   clrRow.appendChild(w._styleClr);clrRow.appendChild(clrLbl);stSec.appendChild(clrRow);
-  w._styleFont=_inp(sty.fontFamily||'','fonte (ex: Playfair Display)');
+  w._styleFont=_mkFontPicker(sty.fontFamily||'');
   stSec.appendChild(_fld('fonte',w._styleFont));
   w._styleSz=document.createElement('select');
   w._styleSz.innerHTML='<option value="">normal</option><option value=".85rem">pequeno</option><option value="1.3rem">grande</option><option value="1.8rem">enorme</option>';
@@ -1995,7 +2126,7 @@ function _applyPanel(id,fields,type){
   }
   if(fields._styleClr!==undefined){
     const color=fields._styleClr?.value||'';
-    const fontFamily=fields._styleFont?.value.trim()||'';
+    const fontFamily=fields._styleFont?._value||'';
     const fontSize=fields._styleSz?.value||'';
     d.style=(color||fontFamily||fontSize)?{color,fontFamily,fontSize}:null;
   }
@@ -2137,7 +2268,7 @@ function _openSheet(id){
       const clrLbl=document.createElement('span');clrLbl.textContent='cor do texto';clrLbl.style.cssText='font-family:Caveat,cursive;font-size:1rem;opacity:.75';
       clrRow.appendChild(clrInp);clrRow.appendChild(clrLbl);tabBody.appendChild(clrRow);
       const fontLbl=document.createElement('p');fontLbl.style.cssText='font-size:.82rem;opacity:.6;margin-bottom:4px';fontLbl.textContent='fonte:';tabBody.appendChild(fontLbl);
-      const fontInp=document.createElement('input');fontInp.className='bs-inp';fontInp.placeholder='ex: Playfair Display';fontInp.value=sty.fontFamily||'';tabBody.appendChild(fontInp);
+      const fontInp=_mkFontPicker(sty.fontFamily||'');tabBody.appendChild(fontInp);
       const szLbl=document.createElement('p');szLbl.style.cssText='font-size:.82rem;opacity:.6;margin:10px 0 4px';szLbl.textContent='tamanho:';tabBody.appendChild(szLbl);
       const szSel=document.createElement('select');szSel.className='bs-inp';
       szSel.innerHTML='<option value="">normal</option><option value=".85rem">pequeno</option><option value="1.3rem">grande</option><option value="1.8rem">enorme</option>';
@@ -2146,7 +2277,7 @@ function _openSheet(id){
       const apSty=document.createElement('button');apSty.className='bs-apply';apSty.textContent='✓ aplicar estilo';
       apSty.addEventListener('click',()=>{
         const color=clrInp.value;
-        const fontFamily=fontInp.value.trim();
+        const fontFamily=fontInp._value||'';
         const fontSize=szSel.value;
         blk.data.style=(color||fontFamily||fontSize)?{color,fontFamily,fontSize}:null;
         if(fontFamily) _loadGFont(fontFamily);
