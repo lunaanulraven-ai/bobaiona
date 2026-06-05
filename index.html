@@ -216,12 +216,12 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 #blkSheet .bs-apply{width:100%;padding:9px;background:var(--rose);color:#fff;border:0;border-radius:9px;font-family:'Caveat',cursive;font-size:1.15rem;cursor:pointer;margin-top:12px;position:sticky;bottom:0;z-index:2}
 #blkSheet .bs-inp{width:100%;background:rgba(255,255,255,.06);color:var(--cream);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:6px 9px;box-sizing:border-box;margin-bottom:6px;font-family:'Spectral',serif;font-size:.9rem}
 /* Block author alignment */
-.blk-autor-caze,.blk-autor-vick{display:block}
-.blk-autor-caze{max-width:85%;margin-left:auto!important;margin-right:0!important;background:rgba(7,94,84,.35)!important;border-radius:18px 4px 18px 18px!important;border-left:none!important;padding:14px 18px!important}
-.blk-autor-vick{max-width:85%;margin-right:auto!important;margin-left:0!important;background:rgba(247,236,226,.08)!important;border-radius:4px 18px 18px 18px!important;border-left:none!important;padding:14px 18px!important}
+.blk-autor-eu,.blk-autor-outro{display:block}
+.blk-autor-eu{max-width:85%;margin-left:auto!important;margin-right:0!important;background:rgba(7,94,84,.35)!important;border-radius:18px 4px 18px 18px!important;border-left:none!important;padding:14px 18px!important}
+.blk-autor-outro{max-width:85%;margin-right:auto!important;margin-left:0!important;background:rgba(247,236,226,.08)!important;border-radius:4px 18px 18px 18px!important;border-left:none!important;padding:14px 18px!important}
 .blk-autor-sig{font-family:'Caveat',cursive;font-size:.85rem;opacity:.5;display:block;margin-top:4px}
-.blk-autor-caze .blk-autor-sig{text-align:right}
-.blk-autor-vick .blk-autor-sig{text-align:left}
+.blk-autor-eu .blk-autor-sig{text-align:right}
+.blk-autor-outro .blk-autor-sig{text-align:left}
 </style></head><body>
 <a class="skip-link" href="#main">Pular para o conteúdo</a>
 <div id="bar"></div>
@@ -1290,7 +1290,8 @@ function _blockEl(b) {
     const tagMap={story:'p',pull:'div',note:'div'};
     const clsMap={story:'story',pull:'pull',note:'note'};
     el=document.createElement(tagMap[t]);
-    el.className=clsMap[t]+' reveal'+(d.autor?' blk-autor-'+d.autor:'');
+    const autorCls=d.autor?(d.autor===currentVersion?'blk-autor-eu':'blk-autor-outro'):'';
+    el.className=clsMap[t]+' reveal'+(autorCls?' '+autorCls:'');
     el.innerHTML=d.html;
     if(d.autor){const sig=document.createElement('span');sig.className='blk-autor-sig';sig.textContent=d.autor==='caze'?'— Cazé':'— Vick';el.appendChild(sig);}
   }
