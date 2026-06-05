@@ -316,7 +316,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 <!-- Mobile bottom sheet -->
 <div id="blkSheet"></div>
 
-<main id="main" tabindex="-1">
+<main id="main" tabindex="-1" style="opacity:0;transition:opacity .35s">
 <div id="versionBar" aria-label="Escolher versão">
   <button id="btnCaze" class="ver-btn active" data-ver="caze">versão do Cazé 🤍</button>
   <button id="btnVick" class="ver-btn" data-ver="vick">versão da Vick 🤍</button>
@@ -1756,6 +1756,7 @@ async function initBlocks(){
   _blocks=blocks;
   renderBlocks(_blocks);
   _reinitDOM();
+  document.getElementById('main').style.opacity='1';
 }
 initBlocks();
 
