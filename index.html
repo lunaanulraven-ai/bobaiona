@@ -2095,6 +2095,18 @@ function _buildFields(blk){
   w._styleSz.innerHTML='<option value="">normal</option><option value=".85rem">pequeno</option><option value="1.3rem">grande</option><option value="1.8rem">enorme</option>';
   if(sty.fontSize) w._styleSz.value=sty.fontSize;
   stSec.appendChild(_fld('tamanho',w._styleSz));
+  const rstBtn=document.createElement('button');rstBtn.type='button';
+  rstBtn.textContent='↩ resetar estilo';
+  rstBtn.style.cssText='width:100%;padding:6px;background:none;border:1px solid rgba(232,166,160,.2);color:var(--soft);border-radius:8px;font-family:Caveat,cursive;font-size:.9rem;cursor:pointer;margin-top:4px';
+  rstBtn.addEventListener('click',()=>{
+    blk.data.style={};
+    w._styleClr.value='#f7ece2';
+    w._styleFont._setValue('');
+    w._styleSz.value='';
+    _reRender();saveAll();
+    if(!_isMobile()) _openPanel(blk.id);
+  });
+  stSec.appendChild(rstBtn);
   w.appendChild(stSec);
   return w;
 }
@@ -2317,6 +2329,17 @@ function _openSheet(id){
         _closeSheet();
       });
       tabBody.appendChild(apSty);
+      const rstSty=document.createElement('button');
+      rstSty.textContent='↩ resetar estilo';
+      rstSty.style.cssText='display:block;width:100%;padding:8px;background:none;border:1px solid rgba(232,166,160,.2);color:var(--soft);border-radius:8px;font-family:Caveat,cursive;font-size:.95rem;cursor:pointer;margin-top:6px';
+      rstSty.addEventListener('click',()=>{
+        blk.data.style={};
+        clrInp.value='#f7ece2';
+        fontInp._setValue('');
+        szSel.value='';
+        _reRender();saveAll();_closeSheet();
+      });
+      tabBody.appendChild(rstSty);
     } else if(tabId==='add'){
       const parent=_bParent(id)||(blk.type==='chapter'?blk:null);
       if(!parent){
