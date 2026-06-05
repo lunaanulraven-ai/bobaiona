@@ -859,8 +859,8 @@ function saveLocal(){
   try {
     localStorage.setItem('bobaiona_shared', JSON.stringify({ blocks: _blocks, music: MUSIC_CONFIG }));
     localStorage.setItem('bobaiona_' + currentVersion + '_prefs', JSON.stringify({ theme }));
-    alert('Salvo localmente');
-  } catch(e) { alert('Erro ao salvar: ' + e.message); }
+    _showSaveToast('💾 salvo localmente');
+  } catch(e) { _showSaveToast('⚠️ erro ao salvar: ' + e.message); }
 }
 
 function loadLocal(){
@@ -1449,7 +1449,7 @@ function _extractYtId(url) {
     const entry = { sectionIndex: idx, videoId, start, end, label };
     const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === idx);
     if (pos >= 0) { MUSIC_CONFIG[pos] = entry; } else { MUSIC_CONFIG.push(entry); }
-    alert('música salva 🎵 — clique em "salvar tudo" pra sincronizar com o outro aparelho');
+    saveAll();
   });
 })();
 
@@ -2216,7 +2216,7 @@ function _applyPanel(id,fields,type){
   }
   _reRender();
   _openPanel(id);
-  if(type==='story'||type==='pull'||type==='note') saveAll();
+  saveAll();
 }
 
 // ── Insert menu ──────────────────────────────────────────────────────────
@@ -2329,7 +2329,7 @@ function _openSheet(id){
         const entry={sectionIndex:secIdx,videoId:vid,start:parseInt(startI.value)||0,end:parseInt(endI.value)||0,label};
         const pos=MUSIC_CONFIG.findIndex(c=>c.sectionIndex===secIdx);
         if(pos>=0) MUSIC_CONFIG[pos]=entry; else MUSIC_CONFIG.push(entry);
-        alert('música salva 🎵');
+        saveAll();
       });
       tabBody.appendChild(saveM);
 
