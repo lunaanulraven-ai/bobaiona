@@ -599,7 +599,7 @@ function _loadSpotifyEmbed(uri) {
   if (!mp || !embed) return;
   embed.innerHTML = '';
   const iframe = document.createElement('iframe');
-  iframe.src = 'https://open.spotify.com/embed/track/' + trackId + '?utm_source=generator&theme=0';
+  iframe.src = 'https://open.spotify.com/embed/track/' + trackId + '?utm_source=generator&theme=0&autoplay=1';
   iframe.width = '300';
   iframe.height = '80';
   iframe.frameBorder = '0';
