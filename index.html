@@ -2045,7 +2045,7 @@ function _buildFields(blk){
     ['caze','vick'].forEach(a=>{const btn=document.createElement('button');btn.type='button';btn.dataset.autor=a;btn.textContent=a==='caze'?'🤍 Cazé':'🤍 Vick';btn.style.cssText='flex:1;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:Caveat,cursive;font-size:1rem';btn.addEventListener('click',()=>{w._autor=(w._autor===a?null:a);_updAutor();});autorRow.appendChild(btn);});
     _updAutor();
     w.appendChild(autorRow);
-    w._html=_ta(d.html); w.appendChild(_fld('conteúdo (html)',w._html));
+    w._html=_ta(d.html); w.appendChild(_fld('texto',w._html));
 
   }else if(t==='chat'){
     const sub=document.createElement('span'); sub.className='bp-sub'; sub.textContent='cabeçalho';
@@ -2070,8 +2070,8 @@ function _buildFields(blk){
     const ab=_addBtn('+ mensagem'); ab.addEventListener('click',()=>addMsg({side:'him',text:'',time:''})); w.appendChild(ab);
 
   }else if(t==='polaroid'){
-    w._src=_inp(d.src,'url da imagem'); w._cap=_inp(d.cap,'legenda');
-    [_fld('url',w._src),_fld('legenda',w._cap)].forEach(f=>w.appendChild(f));
+    w._src=_inp(d.src,'link da imagem'); w._cap=_inp(d.cap,'legenda');
+    [_fld('link da imagem',w._src),_fld('legenda',w._cap)].forEach(f=>w.appendChild(f));
     _imgUploadRow(w,v=>w._src.value=v);
     w._wide=_chk(w,'formato largo (16:9)',d.wide);
     w._span2=_chk(w,'largura total',d.span2);
@@ -2080,9 +2080,9 @@ function _buildFields(blk){
     const il=document.createElement('div'); w._il=il;
     const addI=item=>{
       const row=document.createElement('div'); row.className='bp-item';
-      row._src=_inp(item.src||'','url'); row._cap=_inp(item.cap||'','legenda');
+      row._src=_inp(item.src||'','link da imagem'); row._cap=_inp(item.cap||'','legenda');
       const db=_delBtn(); db.addEventListener('click',()=>row.remove());
-      [_fld('url',row._src),_fld('legenda',row._cap)].forEach(f=>row.appendChild(f));
+      [_fld('link da imagem',row._src),_fld('legenda',row._cap)].forEach(f=>row.appendChild(f));
       _imgUploadRowIn(row,v=>row._src.value=v);
       row.appendChild(db); il.appendChild(row);
     };
@@ -2093,19 +2093,19 @@ function _buildFields(blk){
     const il=document.createElement('div'); w._il=il;
     const addI=item=>{
       const row=document.createElement('div'); row.className='bp-item';
-      row._src=_inp(item.src||'','src do vídeo');
-      row._poster=_inp(item.poster||'','poster (url)');
+      row._src=_inp(item.src||'','link do vídeo');
+      row._poster=_inp(item.poster||'','imagem de capa (url)');
       row._cap=_inp(item.cap||'','legenda');
       const db=_delBtn(); db.addEventListener('click',()=>row.remove());
-      [_fld('src',row._src),_fld('poster',row._poster),_fld('legenda',row._cap),db].forEach(e=>row.appendChild(e));
+      [_fld('link do vídeo',row._src),_fld('imagem de capa',row._poster),_fld('legenda',row._cap),db].forEach(e=>row.appendChild(e));
       il.appendChild(row);
     };
     (d.items||[]).forEach(addI); w.appendChild(il);
     const ab=_addBtn('+ vídeo'); ab.addEventListener('click',()=>addI({src:'',poster:'',cap:''})); w.appendChild(ab);
 
   }else if(t==='vfeat'){
-    w._src=_inp(d.src,'src do vídeo'); w._poster=_inp(d.poster,'poster (url)'); w._cap=_inp(d.cap,'legenda');
-    [_fld('src',w._src),_fld('poster',w._poster),_fld('legenda',w._cap)].forEach(f=>w.appendChild(f));
+    w._src=_inp(d.src,'link do vídeo'); w._poster=_inp(d.poster,'imagem de capa (url)'); w._cap=_inp(d.cap,'legenda');
+    [_fld('link do vídeo',w._src),_fld('imagem de capa',w._poster),_fld('legenda',w._cap)].forEach(f=>w.appendChild(f));
 
   }else if(t==='stats'){
     const il=document.createElement('div'); w._il=il;
@@ -2134,14 +2134,14 @@ function _buildFields(blk){
   }else if(t==='finale'){
     w._chapNo=_inp(d.chapNo); w._big=_inp(d.big); w._story=_ta(d.story);
     w._heartbeat=_inp(d.heartbeat); w._sig=_inp(d.sig);
-    [_fld('chapNo',w._chapNo),_fld('frase grande',w._big),_fld('texto',w._story),
+    [_fld('identificador do capítulo',w._chapNo),_fld('frase grande',w._big),_fld('texto',w._story),
      _fld('heartbeat',w._heartbeat),_fld('assinatura',w._sig)].forEach(f=>w.appendChild(f));
 
   }else if(t==='hero'){
     w._kicker=_inp(d.kicker); w._h1=_ta(d.h1); w._sub=_ta(d.sub);
-    w._photoSrc=_inp(d.photoSrc,'url da foto'); w._photoCap=_inp(d.photoCap,'legenda');
-    [_fld('kicker',w._kicker),_fld('h1 (html)',w._h1),_fld('subtítulo',w._sub),
-     _fld('url da foto',w._photoSrc),_fld('legenda da foto',w._photoCap)].forEach(f=>w.appendChild(f));
+    w._photoSrc=_inp(d.photoSrc,'link da foto'); w._photoCap=_inp(d.photoCap,'legenda');
+    [_fld('kicker',w._kicker),_fld('título',w._h1),_fld('subtítulo',w._sub),
+     _fld('link da foto',w._photoSrc),_fld('legenda da foto',w._photoCap)].forEach(f=>w.appendChild(f));
     _imgUploadRow(w,v=>w._photoSrc.value=v);
   }
   // ── Estilo inline do bloco ────────────────────────────────────────────
