@@ -309,6 +309,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
     <div class="ep-sec">
       <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">🎵</span><span class="ep-sec-title">música</span><span class="ep-sec-arrow">▾</span></button>
       <div class="ep-sec-body">
+        <div id="playlistEditor"></div>
         <select id="musicSection" aria-label="capítulo"></select>
         <div id="desktopMusicSearch" style="margin-top:8px"></div>
       </div>
@@ -590,6 +591,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
     <div class="ep-sec">
       <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">🎵</span><span class="ep-sec-title">música</span><span class="ep-sec-arrow">▾</span></button>
       <div class="ep-sec-body">
+        <div id="drwPlaylistEditor"></div>
         <select id="drwMusicSection" aria-label="capítulo"></select>
         <div id="drwMusicSearch" style="margin-top:8px"></div>
       </div>
@@ -629,12 +631,24 @@ async function _hashPassword(str) {
 
 let _editAuth = false;
 
-// ─── Music config (lido de bobaiona_shared) ─────────────────────────────────
+// ─── Music config ─────────────────────────────────────────────────────────────
+function _setMusicConfig(music) {
+  if (!music) return;
+  if (Array.isArray(music)) {
+    MUSIC_CONFIG = { sections: music, playlist: [] };
+  } else {
+    MUSIC_CONFIG = { sections: music.sections || [], playlist: music.playlist || [] };
+  }
+}
+
 let MUSIC_CONFIG = (function() {
   try {
     const raw = localStorage.getItem('bobaiona_shared');
-    return (raw ? JSON.parse(raw) : null)?.music || [];
-  } catch(e) { return []; }
+    const m = (raw ? JSON.parse(raw) : null)?.music;
+    if (!m) return { sections: [], playlist: [] };
+    if (Array.isArray(m)) return { sections: m, playlist: [] };
+    return { sections: m.sections || [], playlist: m.playlist || [] };
+  } catch(e) { return { sections: [], playlist: [] }; }
 })();
 
 // ─── YouTube IFrame API ──────────────────────────────────────────────────────
@@ -701,27 +715,38 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+function _randomPlaylistTrack() {
+  const pl = MUSIC_CONFIG.playlist;
+  if (!pl?.length) return null;
+  return pl[Math.floor(Math.random() * pl.length)];
+}
+
 function playTrackForSection(sectionIndex) {
-  if (!MUSIC_CONFIG.length) return;
-  const track = MUSIC_CONFIG.find(t => t.sectionIndex === sectionIndex);
-  if (!track || !track.videoId) return;
+  const track = MUSIC_CONFIG.sections.find(t => t.sectionIndex === sectionIndex);
+  if (track?.videoId) {
+    _lastSectionIdx = sectionIndex;
+    _loadYTTrack(track.videoId, track.label || '', track.startSeconds, track.endSeconds);
+    return;
+  }
+  const pick = _randomPlaylistTrack();
+  if (!pick) return;
   _lastSectionIdx = sectionIndex;
-  _loadYTTrack(track.videoId, track.label || '', track.startSeconds, track.endSeconds);
+  _loadYTTrack(pick.videoId, pick.label || '', pick.startSeconds, pick.endSeconds);
 }
 
 let _mobileUnlocked = false;
 
 function unlockAndPlay() {
   const isMob = _isMobile();
+  const hasTracks = MUSIC_CONFIG.sections.length || MUSIC_CONFIG.playlist?.length;
 
-  // Hero track takes priority as the opening track; fall back to sectionIndex 0
-  const firstTrack = MUSIC_CONFIG.find(t => t.sectionIndex === 'hero') ||
-                     MUSIC_CONFIG.find(t => t.sectionIndex === 0);
+  const firstTrack = MUSIC_CONFIG.sections.find(t => t.sectionIndex === 'hero') ||
+                     MUSIC_CONFIG.sections.find(t => t.sectionIndex === 0) ||
+                     _randomPlaylistTrack();
 
-  if (isMob && MUSIC_CONFIG.length) {
-    // Mobile: cue track without autoplay, unlock on first touchstart
+  if (isMob && hasTracks) {
     if (firstTrack?.videoId) {
-      _lastSectionIdx = firstTrack.sectionIndex;
+      _lastSectionIdx = firstTrack.sectionIndex ?? 'hero';
       _loadYTTrack(firstTrack.videoId, firstTrack.label || '', firstTrack.startSeconds, firstTrack.endSeconds, true);
     }
     document.addEventListener('touchstart', function _onFirstTap() {
@@ -731,13 +756,13 @@ function unlockAndPlay() {
     }, { once: true });
   } else {
     if (firstTrack?.videoId) {
-      _lastSectionIdx = firstTrack.sectionIndex;
+      _lastSectionIdx = firstTrack.sectionIndex ?? 'hero';
       _loadYTTrack(firstTrack.videoId, firstTrack.label || '', firstTrack.startSeconds, firstTrack.endSeconds);
     }
   }
 
   // ─── Section-aware playback via IntersectionObserver ──────────────────────
-  if (MUSIC_CONFIG.length) {
+  if (hasTracks) {
     const heroEl = document.querySelector('header.hero');
     const sections = Array.from(document.querySelectorAll('section.wrap'));
     const allEls = [...(heroEl ? [heroEl] : []), ...sections];
@@ -747,8 +772,9 @@ function unlockAndPlay() {
           if (!entry.isIntersecting) return;
           const key = entry.target === heroEl ? 'hero' : sections.indexOf(entry.target);
           if (key === -1 || _lastSectionIdx === key) return;
-          const track = MUSIC_CONFIG.find(t => t.sectionIndex === key);
-          if (!track) return;
+          const sectionTrack = MUSIC_CONFIG.sections.find(t => t.sectionIndex === key);
+          const track = sectionTrack || _randomPlaylistTrack();
+          if (!track?.videoId) return;
           if (isMob && !_mobileUnlocked) {
             _lastSectionIdx = key;
             _loadYTTrack(track.videoId, track.label || '', track.startSeconds, track.endSeconds, true);
@@ -778,7 +804,7 @@ openBtn.addEventListener('click',()=>{
   // them here caused a visible font flash mid-cover-animation.
   supaLoad('shared').then(data => {
     if (!data) return;
-    if (data.music) MUSIC_CONFIG = data.music;
+    if (data.music) _setMusicConfig(data.music);
     try { localStorage.setItem('bobaiona_shared', JSON.stringify(data)); } catch(e) {}
   });
 });
@@ -974,7 +1000,7 @@ function loadLocal(){
     if (!rawShared) return alert('Nenhum salvamento local encontrado');
     if (!confirm('Carregar versão salva localmente?')) return;
     const shared = JSON.parse(rawShared);
-    if (shared.music) MUSIC_CONFIG = shared.music;
+    if (shared.music) _setMusicConfig(shared.music);
     if (shared.blocks?.length) { _blocks = _migrateFlat(shared.blocks); renderBlocks(_blocks); _reinitDOM(); }
     const rawPrefs = localStorage.getItem('bobaiona_' + currentVersion + '_prefs');
     if (rawPrefs) { const prefs = JSON.parse(rawPrefs); if (prefs.theme) applyTheme(prefs.theme); }
@@ -1113,7 +1139,7 @@ importFile.addEventListener('change',(e)=>{
   const r=new FileReader(); r.onload=(ev)=>{
     try{
       const obj=JSON.parse(ev.target.result);
-      if(confirm('Importar conteúdo?')){ applyEditable(obj.texts); applyPhotos(obj.photos); if(obj.music) MUSIC_CONFIG=obj.music; if(obj.theme) applyTheme(obj.theme); _buildThemePicker(); }
+      if(confirm('Importar conteúdo?')){ applyEditable(obj.texts); applyPhotos(obj.photos); if(obj.music) _setMusicConfig(obj.music); if(obj.theme) applyTheme(obj.theme); _buildThemePicker(); }
     }catch(err){ alert('Arquivo inválido'); }
   }; r.readAsText(f);
 });
@@ -1685,7 +1711,117 @@ document.getElementById('main').addEventListener('click', (e) => {
 })();
 
 // ─── Music editor helpers ─────────────────────────────────────────────────────
-function _buildMusicSectionSelect(selEl, searchEl) {
+function _buildPlaylistEditor(container) {
+  if (!container) return;
+  container.innerHTML = '';
+
+  const hdr = document.createElement('div');
+  hdr.style.cssText = "font-family:Caveat,cursive;font-size:1rem;color:var(--gold);margin-bottom:4px";
+  hdr.textContent = '🎶 playlist global';
+  container.appendChild(hdr);
+
+  const sub = document.createElement('p');
+  sub.style.cssText = 'font-size:.78rem;opacity:.5;margin-bottom:8px;line-height:1.4';
+  sub.textContent = 'toca nas seções sem música própria (embaralhado)';
+  container.appendChild(sub);
+
+  const listEl = document.createElement('div');
+  const inpCss = 'width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);color:var(--cream);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:6px 9px;font-family:Spectral,serif;font-size:.9rem;margin-bottom:6px;display:block';
+
+  const renderList = () => {
+    listEl.innerHTML = '';
+    if (!MUSIC_CONFIG.playlist?.length) {
+      const empty = document.createElement('p');
+      empty.style.cssText = 'font-size:.8rem;opacity:.4;margin-bottom:8px';
+      empty.textContent = 'nenhuma música na playlist';
+      listEl.appendChild(empty);
+      return;
+    }
+    MUSIC_CONFIG.playlist.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:4px;background:rgba(255,255,255,.04);border-radius:6px;padding:5px 7px';
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'flex:1;font-size:.82rem;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      lbl.textContent = item.label || item.videoId;
+      const rem = document.createElement('button');
+      rem.type = 'button'; rem.className = 'bp-del'; rem.textContent = '✕';
+      rem.addEventListener('click', () => {
+        MUSIC_CONFIG.playlist.splice(idx, 1);
+        saveAll(); renderList();
+      });
+      row.appendChild(lbl); row.appendChild(rem); listEl.appendChild(row);
+    });
+  };
+  container.appendChild(listEl);
+  renderList();
+
+  const urlInp = document.createElement('input');
+  urlInp.type = 'text'; urlInp.placeholder = 'cole o link do YouTube...';
+  urlInp.style.cssText = inpCss;
+  container.appendChild(urlInp);
+
+  const labelInp = document.createElement('input');
+  labelInp.type = 'text'; labelInp.placeholder = 'nome (preenchido automaticamente)';
+  labelInp.style.cssText = inpCss;
+  container.appendChild(labelInp);
+
+  const timesRow = document.createElement('div');
+  timesRow.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
+  const mkNum = ph => {
+    const i = document.createElement('input');
+    i.type = 'number'; i.min = '0'; i.placeholder = ph;
+    i.style.cssText = 'flex:1;background:rgba(255,255,255,.06);color:var(--cream);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:6px 9px;font-family:Spectral,serif;font-size:.9rem;box-sizing:border-box';
+    return i;
+  };
+  const startInp = mkNum('início (seg)'); const endInp = mkNum('fim (seg)');
+  timesRow.appendChild(startInp); timesRow.appendChild(endInp);
+  container.appendChild(timesRow);
+
+  let _plOembedTimer = null;
+  urlInp.addEventListener('input', () => {
+    clearTimeout(_plOembedTimer);
+    const vid = _extractVideoId(urlInp.value.trim());
+    if (!vid) return;
+    _plOembedTimer = setTimeout(async () => {
+      try {
+        const r = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json');
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d.title && !labelInp.value.trim()) labelInp.value = d.title;
+      } catch (_) {}
+    }, 600);
+  });
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.style.cssText = 'display:block;width:100%;padding:7px;background:var(--rose);color:#fff;border:0;border-radius:8px;font-family:Caveat,cursive;font-size:.95rem;cursor:pointer;margin-bottom:6px';
+  addBtn.textContent = '+ adicionar à playlist';
+  addBtn.addEventListener('click', () => {
+    const videoId = _extractVideoId(urlInp.value.trim());
+    if (!videoId) { _showSaveToast('⚠️ link inválido'); return; }
+    const label = labelInp.value.trim() || urlInp.value.trim();
+    const startSeconds = parseInt(startInp.value) || 0;
+    const endSeconds = parseInt(endInp.value) || 0;
+    const entry = { url: urlInp.value.trim(), videoId, label };
+    if (startSeconds) entry.startSeconds = startSeconds;
+    if (endSeconds) entry.endSeconds = endSeconds;
+    if (!MUSIC_CONFIG.playlist) MUSIC_CONFIG.playlist = [];
+    MUSIC_CONFIG.playlist.push(entry);
+    urlInp.value = ''; labelInp.value = ''; startInp.value = ''; endInp.value = '';
+    saveAll(); renderList();
+    _showSaveToast('🎵 adicionado à playlist!');
+  });
+  container.appendChild(addBtn);
+
+  const sep = document.createElement('hr');
+  sep.style.cssText = 'border:0;border-top:1px solid rgba(232,166,160,.15);margin:10px 0 12px';
+  container.appendChild(sep);
+}
+
+function _buildMusicSectionSelect(selEl, searchEl, plEl) {
+  const plContainer = plEl !== undefined ? plEl : document.getElementById('playlistEditor');
+  _buildPlaylistEditor(plContainer);
+
   const sel = selEl || document.getElementById('musicSection');
   if (!sel) return;
   sel.innerHTML = '';
@@ -1713,7 +1849,7 @@ function _buildMusicSectionSelect(selEl, searchEl) {
 function _buildMusicSearch(sectionIdx, container) {
   container.innerHTML = '';
 
-  const existing = (sectionIdx === 'hero' || sectionIdx >= 0) ? MUSIC_CONFIG.find(t => t.sectionIndex === sectionIdx) : null;
+  const existing = (sectionIdx === 'hero' || sectionIdx >= 0) ? MUSIC_CONFIG.sections.find(t => t.sectionIndex === sectionIdx) : null;
   if (existing?.label) {
     const cur = document.createElement('p');
     cur.style.cssText = 'font-size:.8rem;opacity:.6;margin-bottom:8px';
@@ -1777,8 +1913,8 @@ function _buildMusicSearch(sectionIdx, container) {
     const entry = { sectionIndex: sectionIdx, videoId, label };
     if (startSeconds) entry.startSeconds = startSeconds;
     if (endSeconds) entry.endSeconds = endSeconds;
-    const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === sectionIdx);
-    if (pos >= 0) { MUSIC_CONFIG[pos] = entry; } else { MUSIC_CONFIG.push(entry); }
+    const pos = MUSIC_CONFIG.sections.findIndex(c => c.sectionIndex === sectionIdx);
+    if (pos >= 0) { MUSIC_CONFIG.sections[pos] = entry; } else { MUSIC_CONFIG.sections.push(entry); }
     _loadYTTrack(videoId, label, startSeconds || undefined, endSeconds || undefined);
     saveAll();
     _showSaveToast('🎵 música salva!');
@@ -1791,8 +1927,8 @@ function _buildMusicSearch(sectionIdx, container) {
     remBtn.style.cssText = 'display:block;width:100%;padding:7px;background:none;border:1px solid rgba(232,166,160,.25);color:var(--rose);border-radius:8px;font-family:Caveat,cursive;font-size:.95rem;cursor:pointer;margin-top:4px';
     remBtn.textContent = '🗑 remover música';
     remBtn.addEventListener('click', () => {
-      const pos = MUSIC_CONFIG.findIndex(c => c.sectionIndex === sectionIdx);
-      if (pos >= 0) { MUSIC_CONFIG.splice(pos, 1); }
+      const pos = MUSIC_CONFIG.sections.findIndex(c => c.sectionIndex === sectionIdx);
+      if (pos >= 0) { MUSIC_CONFIG.sections.splice(pos, 1); }
       if (_lastSectionIdx === sectionIdx) {
         const mp = document.getElementById('musicPlayer');
         if (mp) mp.style.display = 'none';
@@ -2043,14 +2179,14 @@ async function initBlocks(){
     const supaData=await supaLoad('shared');
     if(supaData){
       if(supaData.blocks?.length) blocks=_migrateFlat(supaData.blocks);
-      if(supaData.music) MUSIC_CONFIG=supaData.music;
+      if(supaData.music) _setMusicConfig(supaData.music);
       if(supaData.customThemes){customThemes=supaData.customThemes;_mergeCustomThemes();}
       try{localStorage.setItem('bobaiona_shared',JSON.stringify(supaData));}catch(e){}
     } else {
       const raw=localStorage.getItem('bobaiona_shared');
-      if(raw) try{const d=JSON.parse(raw);if(d.blocks?.length)blocks=_migrateFlat(d.blocks);if(d.music)MUSIC_CONFIG=d.music;if(d.customThemes){customThemes=d.customThemes;_mergeCustomThemes();}}catch(e){}
+      if(raw) try{const d=JSON.parse(raw);if(d.blocks?.length)blocks=_migrateFlat(d.blocks);if(d.music)_setMusicConfig(d.music);if(d.customThemes){customThemes=d.customThemes;_mergeCustomThemes();}}catch(e){}
     }
-    MUSIC_CONFIG=MUSIC_CONFIG.filter(c=>c.videoId);
+    MUSIC_CONFIG.sections=MUSIC_CONFIG.sections.filter(c=>c.videoId);
     const prefs=await supaLoad(currentVersion+'_prefs');
     console.log('[bobaiona] initBlocks prefs from supabase:', prefs);
     if(prefs){applyPrefs(prefs);_buildThemePicker();}
@@ -2778,7 +2914,8 @@ function _openGlobalDrawer() {
     _buildCustomThemeCreator('drwCustomThemeCreator');
     _buildMusicSectionSelect(
       document.getElementById('drwMusicSection'),
-      document.getElementById('drwMusicSearch')
+      document.getElementById('drwMusicSearch'),
+      document.getElementById('drwPlaylistEditor')
     );
     // Preserve current font values before reinitializing pickers
     const prevTitle  = _gFontPickers.title?._value  || '';
