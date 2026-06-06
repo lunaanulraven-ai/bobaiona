@@ -170,6 +170,9 @@ section{padding:64px 0;position:relative;z-index:2}
 .reveal{opacity:0;transform:translateY(34px);transition:opacity .9s ease,transform .9s ease}
 .reveal.in{opacity:1;transform:none}
 footer{text-align:center;padding:28px 0 50px;font-size:.78rem;opacity:.45}
+.continues-sep{text-align:center;margin:40px auto 0;display:flex;flex-direction:column;align-items:center;gap:14px}
+.continues-sep-line{width:60px;height:1px;background:var(--rose);opacity:.45}
+.continues-sep-text{font-family:'Caveat',cursive;font-size:1.05rem;color:var(--rose);opacity:.55;letter-spacing:.2em}
 @media(max-width:520px){.gallery{gap:14px}.vwall{gap:8px}section{padding:50px 0}}
 /* Floating music player */
 #musicPlayer{position:fixed;bottom:20px;left:18px;z-index:998;background:rgba(16,7,14,.88);border:1px solid rgba(232,166,160,.22);backdrop-filter:blur(10px);border-radius:16px;padding:10px 14px;display:flex;flex-direction:column;gap:8px;width:280px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
@@ -552,16 +555,25 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 </section>
 
 <section class="wrap finale">
-  <span class="chap-no reveal">pra fechar</span>
+  <span class="chap-no reveal">pra fechar (por enquanto)</span>
   <p class="big reveal">Eu te amo, minha neném.</p>
   <p class="story reveal" style="max-width:60ch;margin:0 auto">Poucos dias, eu sei. Mas dos bons e mt bem aproveitados. Dos q a gente vai querer contar de novo. Obrigado por aguentar meu ronco, por cozinhar pra mim, por querer me ensinar a virar gente, por me chamar de divo de madrugada e por ter deixado a sementinha vingar. Eu não vou sumir. Tenho responsabilidade com a minha princesa. E no final das contas deu certo a tática de pedir comida boa. 🤍</p>
   <div class="heartbeat reveal">❤</div>
   <div class="sig reveal">— seu bobaião 🤍</div>
 </section>
 
-</main>
+<section class="wrap">
+  <span class="chap-no reveal">capítulo doze</span>
+  <h2 class="chap-h reveal">continuará...</h2>
+  <div class="chap-date reveal">em aberto</div>
+  <p class="story reveal">tô só começando a escrever. tem muito mais capítulo vindo — de coisa nova, de viagem, de pijama combinando, de strogonoff que a gente ainda vai fazer juntos, de coisas que ainda nem aconteceram. esse diário não fecha. guarda aqui que eu vou atualizando, minha neném. 🤍</p>
+  <div class="continues-sep reveal">
+    <div class="continues-sep-line"></div>
+    <span class="continues-sep-text">↓ mais por vir</span>
+  </div>
+</section>
 
-<footer>feito à mão, com mídia oculta, muito te amo e zero abridor de vinho • 02/06/2026</footer>
+</main>
 <button id="drawerToggleBtn" aria-label="Menu de edição">☰</button>
 <div id="globalDrawerOverlay"></div>
 <div id="globalDrawer">
