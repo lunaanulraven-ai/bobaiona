@@ -1,5 +1,5 @@
 // Atualizado automaticamente pelo pre-commit hook a cada commit
-const VERSION = '1780710874590';
+const VERSION = '1780712041784';
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -11,4 +11,7 @@ self.addEventListener('activate', e => {
   );
 });
 
-self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
+self.addEventListener('fetch', e => {
+  if (new URL(e.request.url).origin !== self.location.origin) return;
+  e.respondWith(fetch(e.request));
+});
