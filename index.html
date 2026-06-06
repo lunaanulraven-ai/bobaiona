@@ -97,7 +97,7 @@ section{padding:64px 0;position:relative;z-index:2}
 .cv-word{display:inline-block;margin:0 .15em;will-change:transform,opacity}
 #cover p{font-family:'Caveat',cursive!important;font-size:clamp(1.1rem,3vw,1.5rem);color:var(--gold);max-width:600px;margin:0 auto;will-change:transform,opacity}
 #coverLine{display:block;height:1px;width:80px;background:var(--rose);margin:20px auto 0;transform-origin:left center;will-change:transform,opacity}
-#openBtn{margin-top:36px;font-family:'Caveat',cursive;font-size:1.4rem;letter-spacing:.06em;padding:12px 40px;background:transparent;color:var(--rose);border:1px solid rgba(232,166,160,.5);border-radius:40px;cursor:pointer;transition:background .25s,color .25s,border-color .25s;will-change:opacity}
+#openBtn{margin-top:36px;font-family:'Caveat',cursive;font-size:1.4rem;letter-spacing:.06em;padding:12px 40px;background:transparent;color:var(--rose);border:1px solid rgba(232,166,160,.5);border-radius:40px;cursor:pointer;transition:background .25s,color .25s,border-color .25s}
 #openBtn:hover{background:rgba(232,166,160,.12);border-color:var(--rose)}
 #openBtn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offset:4px}
 .hearts{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
@@ -783,18 +783,16 @@ openBtn.addEventListener('click',()=>{
   const cvLine = document.getElementById('coverLine');
   const openBtnEl = document.getElementById('openBtn');
 
-  gsap.set(cvEnv,      { opacity: 0, scale: 0.5 });
-  gsap.set(cvWords,    { opacity: 0, y: 60 });
-  gsap.set(cvP,        { opacity: 0, y: 30 });
-  gsap.set(cvLine,     { scaleX: 0, opacity: 0, transformOrigin: 'left center' });
-  gsap.set(openBtnEl,  { opacity: 0, y: 20 });
+  gsap.set(cvEnv,   { opacity: 0, scale: 0.6 });
+  gsap.set(cvWords, { opacity: 0, y: 30 });
+  gsap.set(cvP,     { opacity: 0 });
+  gsap.set(cvLine,  { scaleX: 0, opacity: 0, transformOrigin: 'left center' });
 
-  gsap.timeline({ delay: 0.2 })
-    .to(cvEnv,     { opacity: 1, scale: 1, duration: 1.2, ease: 'elastic.out(1, 0.5)' },    0.3)
-    .to(cvWords,   { opacity: 1, y: 0, duration: 1,   ease: 'power3.out', stagger: 0.15 }, 0.6)
-    .to(cvP,       { opacity: 1, y: 0, duration: 0.9, ease: 'power2.out' },                 1.2)
-    .to(cvLine,    { scaleX: 1, opacity: 1, duration: 0.8, ease: 'power2.out' },            1.4)
-    .to(openBtnEl, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' },                 2.0);
+  gsap.timeline({ delay: 0.05 })
+    .to(cvEnv,   { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.4)' },          0)
+    .to(cvWords, { opacity: 1, y: 0,     duration: 0.4, ease: 'power2.out', stagger: 0.07 }, 0.1)
+    .to(cvP,     { opacity: 1,           duration: 0.4, ease: 'power2.out' },               0.3)
+    .to(cvLine,  { scaleX: 1, opacity: 1, duration: 0.35, ease: 'power2.out' },            0.4);
 
   cvEl.addEventListener('mousemove', e => {
     if (!cvBg) return;
