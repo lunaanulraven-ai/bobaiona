@@ -687,12 +687,15 @@ let _mobileUnlocked = false;
 function unlockAndPlay() {
   const isMob = _isMobile();
 
+  // Hero track takes priority as the opening track; fall back to sectionIndex 0
+  const firstTrack = MUSIC_CONFIG.find(t => t.sectionIndex === 'hero') ||
+                     MUSIC_CONFIG.find(t => t.sectionIndex === 0);
+
   if (isMob && MUSIC_CONFIG.length) {
-    // Mobile: cue section 0 without autoplay, wait for first tap
-    const track0 = MUSIC_CONFIG.find(t => t.sectionIndex === 0);
-    if (track0?.videoId) {
-      _lastSectionIdx = 0;
-      _loadYTTrack(track0.videoId, track0.label || '', track0.startSeconds, track0.endSeconds, true);
+    // Mobile: cue track without autoplay, unlock on first touchstart
+    if (firstTrack?.videoId) {
+      _lastSectionIdx = firstTrack.sectionIndex;
+      _loadYTTrack(firstTrack.videoId, firstTrack.label || '', firstTrack.startSeconds, firstTrack.endSeconds, true);
     }
     document.addEventListener('touchstart', function _onFirstTap() {
       document.removeEventListener('touchstart', _onFirstTap);
@@ -700,30 +703,35 @@ function unlockAndPlay() {
       if (_ytPlayer && _ytReady) _ytPlayer.playVideo();
     }, { once: true });
   } else {
-    playTrackForSection(0);
+    if (firstTrack?.videoId) {
+      _lastSectionIdx = firstTrack.sectionIndex;
+      _loadYTTrack(firstTrack.videoId, firstTrack.label || '', firstTrack.startSeconds, firstTrack.endSeconds);
+    }
   }
 
   // ─── Section-aware playback via IntersectionObserver ──────────────────────
   if (MUSIC_CONFIG.length) {
+    const heroEl = document.querySelector('header.hero');
     const sections = Array.from(document.querySelectorAll('section.wrap'));
-    if (sections.length) {
+    const allEls = [...(heroEl ? [heroEl] : []), ...sections];
+    if (allEls.length) {
       const sectionObs = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (!entry.isIntersecting) return;
-          const idx = sections.indexOf(entry.target);
-          if (idx === -1 || _lastSectionIdx === idx) return;
-          const track = MUSIC_CONFIG.find(t => t.sectionIndex === idx);
+          const key = entry.target === heroEl ? 'hero' : sections.indexOf(entry.target);
+          if (key === -1 || _lastSectionIdx === key) return;
+          const track = MUSIC_CONFIG.find(t => t.sectionIndex === key);
           if (!track) return;
           if (isMob && !_mobileUnlocked) {
-            // Not yet unlocked: cue the new track, tap handler will play it
-            _lastSectionIdx = idx;
+            _lastSectionIdx = key;
             _loadYTTrack(track.videoId, track.label || '', track.startSeconds, track.endSeconds, true);
           } else {
-            playTrackForSection(idx);
+            _lastSectionIdx = key;
+            _loadYTTrack(track.videoId, track.label || '', track.startSeconds, track.endSeconds);
           }
         });
       }, { threshold: 0.4 });
-      sections.forEach(s => sectionObs.observe(s));
+      allEls.forEach(el => sectionObs.observe(el));
     }
   }
 }
@@ -1603,6 +1611,10 @@ function _buildMusicSectionSelect(selEl, searchEl) {
   const sel = selEl || document.getElementById('musicSection');
   if (!sel) return;
   sel.innerHTML = '';
+  const heroOpt = document.createElement('option');
+  heroOpt.value = 'hero';
+  heroOpt.textContent = '🏠 abertura (hero)';
+  sel.appendChild(heroOpt);
   document.querySelectorAll('section.wrap').forEach((sec, i) => {
     const title = sec.querySelector('.chap-h')?.textContent?.trim() || ('seção ' + (i+1));
     const opt = document.createElement('option');
@@ -1612,9 +1624,10 @@ function _buildMusicSectionSelect(selEl, searchEl) {
   });
   const container = searchEl || document.getElementById('desktopMusicSearch');
   if (container) {
-    _buildMusicSearch(0, container);
+    _buildMusicSearch('hero', container);
     sel.addEventListener('change', () => {
-      _buildMusicSearch(parseInt(sel.value), container);
+      const v = sel.value;
+      _buildMusicSearch(v === 'hero' ? 'hero' : parseInt(v), container);
     });
   }
 }
@@ -1622,7 +1635,7 @@ function _buildMusicSectionSelect(selEl, searchEl) {
 function _buildMusicSearch(sectionIdx, container) {
   container.innerHTML = '';
 
-  const existing = sectionIdx >= 0 ? MUSIC_CONFIG.find(t => t.sectionIndex === sectionIdx) : null;
+  const existing = (sectionIdx === 'hero' || sectionIdx >= 0) ? MUSIC_CONFIG.find(t => t.sectionIndex === sectionIdx) : null;
   if (existing?.label) {
     const cur = document.createElement('p');
     cur.style.cssText = 'font-size:.8rem;opacity:.6;margin-bottom:8px';
@@ -2574,7 +2587,7 @@ function _openSheet(id){
 
     } else if(tabId==='music'){
       const sec=document.querySelector('[data-block-id="'+id+'"]');
-      const secIdx=sec?Array.from(document.querySelectorAll('section.wrap')).indexOf(sec):-1;
+      const secIdx=blk.type==='hero'?'hero':(sec?Array.from(document.querySelectorAll('section.wrap')).indexOf(sec):-1);
       _buildMusicSearch(secIdx, tabBody);
 
     } else if(tabId==='style'){
@@ -2639,7 +2652,7 @@ function _openSheet(id){
     }
   };
 
-  const _noMusicTab=blk.type==='hero'||blk.type==='finale';
+  const _noMusicTab=blk.type==='finale';
   const _noStyleTab=blk.type==='hero'||blk.type==='finale';
   [{id:'edit',l:'✏️ editar'},...(_noMusicTab?[]:[{id:'music',l:'🎵 música'}]),...(_noStyleTab?[]:[{id:'style',l:'🎨 estilo'}]),{id:'add',l:'+ adicionar'}].forEach(({id:tid,l})=>{
     const btn=document.createElement('button'); btn.className='bs-tab'; btn.dataset.tab=tid; btn.textContent=l;
