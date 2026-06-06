@@ -590,9 +590,14 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 </div>
 <script>
 // ─── Config (preencha após criar o projeto no Supabase) ──────────────────────
-const SUPABASE_URL      = 'https://vmkzffuwsndmpkgpxzbz.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_Pcq-v4gUzOy_6SdmnkSR2Q_cw3h9kYJ';
-const EDIT_PASSWORD     = 'bobaiona'; // troque por uma senha sua
+const SUPABASE_URL           = 'https://vmkzffuwsndmpkgpxzbz.supabase.co';
+const SUPABASE_ANON_KEY      = 'sb_publishable_Pcq-v4gUzOy_6SdmnkSR2Q_cw3h9kYJ';
+const EDIT_PASSWORD_HASH     = '337e5e2ceb76b39172b361de8f10f0df06f8db084ef5c346279bf2da84237dfd';
+
+async function _hashPassword(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 let _editAuth = false;
 
@@ -822,10 +827,10 @@ let editMode=false;
 let _freshToast=null;
 const editableSelectors=['.story','.chap-h','.chap-date','.pull','.kicker','.hero h1','.polaroid .cap','.menu li .dish','.menu li .tag','.stat .big','.stat .lab','.sig','.heartbeat'];
 
-function toggleEditor(){
+async function toggleEditor(){
   if (!editMode && !_editAuth) {
     const pwd = prompt('senha pra editar 🔑');
-    if (pwd !== EDIT_PASSWORD) { alert('senha errada 🙈'); return; }
+    if (await _hashPassword(pwd || '') !== EDIT_PASSWORD_HASH) { alert('senha errada 🙈'); return; }
     _editAuth = true;
   }
   editMode = !editMode;
