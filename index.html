@@ -565,6 +565,9 @@ let MUSIC_CONFIG = (function() {
 
 // ─── Piped player (YouTube frontend sem anúncio) ─────────────────────────────
 const PIPED_INSTANCES = [
+  'https://piped-api.privacy.com.de',
+  'https://pipedapi.drgns.space',
+  'https://pipedapi.owo.si',
   'https://pipedapi.kavin.rocks',
   'https://pipedapi.adminforge.de',
   'https://api.piped.yt',
@@ -579,7 +582,7 @@ async function _getPipedInstance() {
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 3000);
-      const res = await fetch(inst + '/trending?region=BR', { signal: ctrl.signal });
+      const res = await fetch(inst + '/healthcheck', { signal: ctrl.signal });
       clearTimeout(t);
       if (res.ok) { _pipedInstance = inst; return inst; }
     } catch(e) {}
