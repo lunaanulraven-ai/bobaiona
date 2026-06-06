@@ -319,6 +319,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
     <div class="ep-sec">
       <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">···</span><span class="ep-sec-title">mais</span><span class="ep-sec-arrow">▾</span></button>
       <div class="ep-sec-body" style="display:flex;flex-direction:column;gap:6px">
+        <button id="resetStylesBtn" class="ep-btn-sec">↩ resetar estilos</button>
         <button id="exportBtn" class="ep-btn-sec">exportar JSON</button>
         <button id="loadBtn" class="ep-btn-sec">carregar salvo local</button>
         <label for="importFile" class="ep-btn-sec" style="cursor:pointer;text-align:center;margin:0">importar JSON</label>
@@ -586,6 +587,12 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
     <div class="ep-sec">
       <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">🎨</span><span class="ep-sec-title">cores</span><span class="ep-sec-arrow">▾</span></button>
       <div class="ep-sec-body"><div id="drwColorPickers"></div></div>
+    </div>
+    <div class="ep-sec">
+      <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">···</span><span class="ep-sec-title">mais</span><span class="ep-sec-arrow">▾</span></button>
+      <div class="ep-sec-body" style="display:flex;flex-direction:column;gap:6px">
+        <button id="drwResetStylesBtn" class="ep-btn-sec">↩ resetar estilos</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1448,6 +1455,25 @@ function applyPrefs(prefs) {
     saveAll();
   });
 })();
+
+function _resetAllStyles() {
+  if (!confirm('Tem certeza? Isso vai resetar todas as fontes e cores.')) return;
+  const r = document.documentElement.style;
+  r.removeProperty('--font-title');
+  r.removeProperty('--font-body');
+  r.removeProperty('--font-script');
+  if (_gFontPickers.title)  _gFontPickers.title._setValue('');
+  if (_gFontPickers.body)   _gFontPickers.body._setValue('');
+  if (_gFontPickers.script) _gFontPickers.script._setValue('');
+  applyTheme('padrao');
+  _CLR_VARS.forEach(({ prop }) => r.removeProperty(prop));
+  _buildColorPickers();
+  _buildColorPickers('drwColorPickers');
+  saveAll();
+}
+
+document.getElementById('resetStylesBtn')?.addEventListener('click', _resetAllStyles);
+document.getElementById('drwResetStylesBtn')?.addEventListener('click', _resetAllStyles);
 
 async function switchVersion(ver) {
   if (ver === currentVersion) return;
