@@ -592,7 +592,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 // ─── Config (preencha após criar o projeto no Supabase) ──────────────────────
 const SUPABASE_URL           = 'https://vmkzffuwsndmpkgpxzbz.supabase.co';
 const SUPABASE_ANON_KEY      = 'sb_publishable_Pcq-v4gUzOy_6SdmnkSR2Q_cw3h9kYJ';
-const EDIT_PASSWORD_HASH     = '337e5e2ceb76b39172b361de8f10f0df06f8db084ef5c346279bf2da84237dfd';
+const EDIT_PASSWORD_HASH     = '1c5dc74ff0cca6e817a17c3450106de8abd027fc2a19743fc9b272ec8eb44fe4';
 
 async function _hashPassword(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
