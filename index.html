@@ -171,7 +171,8 @@ footer{text-align:center;padding:28px 0 50px;font-size:.78rem;opacity:.45}
 /* Floating music player */
 #musicPlayer{position:fixed;bottom:20px;left:18px;z-index:998;background:rgba(16,7,14,.88);border:1px solid rgba(232,166,160,.22);backdrop-filter:blur(10px);border-radius:16px;padding:10px 14px;display:flex;flex-direction:column;gap:8px;width:280px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #musicInfo{display:flex;align-items:center;gap:10px}
-#musicThumb{width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0}
+#musicThumb{width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0;display:none}
+#ytPlayer{position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;pointer-events:none}
 #musicTitle{display:block;font-family:'Caveat',cursive;font-size:1rem;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
 #musicArtist{display:block;font-size:.75rem;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
 #musicToggle{background:none;border:1px solid rgba(232,166,160,.3);border-radius:50%;width:36px;height:36px;color:var(--cream);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0}
@@ -272,15 +273,15 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 <!-- Floating music player -->
 <div id="musicPlayer" style="display:none">
   <div id="musicInfo">
-    <img id="musicThumb" src="" alt="" style="display:none">
+    <img id="musicThumb" src="" alt="">
     <div style="flex:1;min-width:0">
       <span id="musicTitle"></span>
       <span id="musicArtist"></span>
     </div>
     <button id="musicToggle">▶</button>
   </div>
-  <div id="ytPlayer"></div>
 </div>
+<div id="ytPlayer"></div>
 
 <!-- Editor UI -->
 <button id="editToggle" aria-pressed="false" title="Ativar edição" style="display:none">✎ Editar</button>
@@ -617,7 +618,7 @@ let _lastSectionIdx = -1;
 function onYouTubeIframeAPIReady() {
   _ytPlayer = new YT.Player('ytPlayer', {
     height: '1', width: '1',
-    playerVars: { autoplay: 0, controls: 0, playsinline: 1 },
+    playerVars: { autoplay: 0, controls: 0, playsinline: 1, rel: 0, modestbranding: 1 },
     events: {
       onReady: () => { _ytReady = true; },
       onStateChange: (e) => {
@@ -636,7 +637,7 @@ function _extractVideoId(url) {
   return m ? m[1] : (url.length === 11 ? url : '');
 }
 
-function _loadYTTrack(videoId, title, startSeconds, endSeconds) {
+function _loadYTTrack(videoId, title, startSeconds, endSeconds, cueOnly) {
   const mp = document.getElementById('musicPlayer');
   const titleEl = document.getElementById('musicTitle');
   const thumbEl = document.getElementById('musicThumb');
@@ -644,15 +645,16 @@ function _loadYTTrack(videoId, title, startSeconds, endSeconds) {
   if (!mp) return;
   if (titleEl) titleEl.textContent = title || '';
   if (thumbEl) {
-    thumbEl.src = 'https://img.youtube.com/vi/' + videoId + '/mqdefault.jpg';
+    thumbEl.src = 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg';
     thumbEl.style.display = 'block';
   }
-  if (toggleBtn) toggleBtn.textContent = '⏳';
+  if (toggleBtn) toggleBtn.textContent = cueOnly ? '▶' : '⏳';
   mp.style.display = 'block';
   const doLoad = () => {
     const opts = { videoId, startSeconds: startSeconds || 0 };
     if (endSeconds) opts.endSeconds = endSeconds;
-    _ytPlayer.loadVideoById(opts);
+    if (cueOnly) _ytPlayer.cueVideoById(opts);
+    else _ytPlayer.loadVideoById(opts);
   };
   if (_ytReady) doLoad();
   else {
@@ -680,8 +682,27 @@ function playTrackForSection(sectionIndex) {
   _loadYTTrack(track.videoId, track.label || '', track.startSeconds, track.endSeconds);
 }
 
+let _mobileUnlocked = false;
+
 function unlockAndPlay() {
-  playTrackForSection(0);
+  const isMob = _isMobile();
+
+  if (isMob && MUSIC_CONFIG.length) {
+    // Mobile: cue section 0 without autoplay, wait for first tap
+    const track0 = MUSIC_CONFIG.find(t => t.sectionIndex === 0);
+    if (track0?.videoId) {
+      _lastSectionIdx = 0;
+      _loadYTTrack(track0.videoId, track0.label || '', track0.startSeconds, track0.endSeconds, true);
+    }
+    document.addEventListener('touchstart', function _onFirstTap() {
+      document.removeEventListener('touchstart', _onFirstTap);
+      _mobileUnlocked = true;
+      if (_ytPlayer && _ytReady) _ytPlayer.playVideo();
+    }, { once: true });
+  } else {
+    playTrackForSection(0);
+  }
+
   // ─── Section-aware playback via IntersectionObserver ──────────────────────
   if (MUSIC_CONFIG.length) {
     const sections = Array.from(document.querySelectorAll('section.wrap'));
@@ -693,7 +714,13 @@ function unlockAndPlay() {
           if (idx === -1 || _lastSectionIdx === idx) return;
           const track = MUSIC_CONFIG.find(t => t.sectionIndex === idx);
           if (!track) return;
-          playTrackForSection(idx);
+          if (isMob && !_mobileUnlocked) {
+            // Not yet unlocked: cue the new track, tap handler will play it
+            _lastSectionIdx = idx;
+            _loadYTTrack(track.videoId, track.label || '', track.startSeconds, track.endSeconds, true);
+          } else {
+            playTrackForSection(idx);
+          }
         });
       }, { threshold: 0.4 });
       sections.forEach(s => sectionObs.observe(s));
@@ -1618,6 +1645,21 @@ function _buildMusicSearch(sectionIdx, container) {
   labelInp.value = existing?.label || '';
   labelInp.style.cssText = inpCss;
   container.appendChild(labelInp);
+
+  let _oembedTimer = null;
+  urlInp.addEventListener('input', () => {
+    clearTimeout(_oembedTimer);
+    const vid = _extractVideoId(urlInp.value.trim());
+    if (!vid) return;
+    _oembedTimer = setTimeout(async () => {
+      try {
+        const r = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json');
+        if (!r.ok) return;
+        const data = await r.json();
+        if (data.title && !labelInp.value.trim()) labelInp.value = data.title;
+      } catch (_) {}
+    }, 600);
+  });
 
   const timesRow = document.createElement('div');
   timesRow.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
