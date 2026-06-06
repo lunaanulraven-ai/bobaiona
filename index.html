@@ -244,6 +244,12 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 #blkSheet .bs-body{flex:1;overflow-y:auto;max-height:calc(85vh - 120px);padding:12px 16px 80px;-webkit-overflow-scrolling:touch}
 #blkSheet .bs-apply{width:100%;padding:9px;background:var(--rose);color:#fff;border:0;border-radius:9px;font-family:'Caveat',cursive;font-size:1.15rem;cursor:pointer;margin-top:12px;position:sticky;bottom:0;z-index:2}
 #blkSheet .bs-inp{width:100%;background:rgba(255,255,255,.06);color:var(--cream);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:6px 9px;box-sizing:border-box;margin-bottom:6px;font-family:'Spectral',serif;font-size:.9rem}
+/* Global drawer (mobile edit menu) */
+#globalDrawer{position:fixed;top:0;left:0;width:85vw;max-width:320px;height:100vh;z-index:1400;background:rgba(16,7,14,.97);border-right:1px solid rgba(232,166,160,.18);overflow-y:auto;transform:translateX(-100%);transition:transform .3s ease;padding:0}
+#globalDrawer.open{transform:translateX(0)}
+#globalDrawerOverlay{position:fixed;inset:0;z-index:1399;background:rgba(0,0,0,.5);display:none;opacity:0;transition:opacity .3s}
+#globalDrawerOverlay.open{display:block;opacity:1}
+#drawerToggleBtn{position:fixed;top:12px;left:12px;z-index:1300;width:44px;height:44px;border-radius:50%;background:var(--rose);border:0;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;color:#fff;font-size:1.2rem}
 /* Block author alignment */
 .blk-autor-eu,.blk-autor-outro{display:block}
 .blk-autor-eu{max-width:85%;margin-left:auto!important;margin-right:0!important;background:rgba(7,94,84,.35)!important;border-radius:18px 4px 18px 18px!important;border-left:none!important;padding:14px 18px!important}
@@ -547,6 +553,41 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
 </main>
 
 <footer>feito à mão, com mídia oculta, muito te amo e zero abridor de vinho • 02/06/2026</footer>
+<button id="drawerToggleBtn" aria-label="Menu de edição">☰</button>
+<div id="globalDrawerOverlay"></div>
+<div id="globalDrawer">
+  <div class="ep-header">
+    <div class="ep-title">✏️ editar página</div>
+    <button id="drawerSaveBtn" class="ep-save-btn">💾 salvar tudo</button>
+    <span id="drawerSyncStatus"></span>
+  </div>
+  <div class="ep-sections">
+    <div class="ep-sec open">
+      <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">🌙</span><span class="ep-sec-title">clima</span><span class="ep-sec-arrow">▾</span></button>
+      <div class="ep-sec-body"><div id="drwThemePicker"></div></div>
+    </div>
+    <div class="ep-sec">
+      <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">🎵</span><span class="ep-sec-title">música</span><span class="ep-sec-arrow">▾</span></button>
+      <div class="ep-sec-body">
+        <select id="drwMusicSection" aria-label="capítulo"></select>
+        <div id="drwMusicSearch" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="ep-sec">
+      <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">✍️</span><span class="ep-sec-title">fontes</span><span class="ep-sec-arrow">▾</span></button>
+      <div class="ep-sec-body">
+        <div class="ep-font-slot"><label>títulos</label><div id="drwFontTitle"></div></div>
+        <div class="ep-font-slot"><label>texto</label><div id="drwFontBody"></div></div>
+        <div class="ep-font-slot"><label>cursiva / assinaturas</label><div id="drwFontScript"></div></div>
+        <button id="drwApplyFontsBtn" class="ep-btn-primary" style="margin-top:12px">💾 salvar fontes</button>
+      </div>
+    </div>
+    <div class="ep-sec">
+      <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">🎨</span><span class="ep-sec-title">cores</span><span class="ep-sec-arrow">▾</span></button>
+      <div class="ep-sec-body"><div id="drwColorPickers"></div></div>
+    </div>
+  </div>
+</div>
 <script>
 // ─── Config (preencha após criar o projeto no Supabase) ──────────────────────
 const SUPABASE_URL      = 'https://vmkzffuwsndmpkgpxzbz.supabase.co';
@@ -816,6 +857,8 @@ function toggleEditor(){
     _buildMusicSectionSelect();
     _buildColorPickers();
     _rebuildToolbars();
+    const _dTgl = document.getElementById('drawerToggleBtn');
+    if (_dTgl && _isMobile()) _dTgl.style.display = 'flex';
   } else {
     editorPanel.style.display = 'none';
     editorPanel.setAttribute('aria-hidden', 'true');
@@ -826,6 +869,9 @@ function toggleEditor(){
     document.querySelectorAll('[data-block-id]').forEach(el=>{el.removeAttribute('draggable');el.classList.remove('blk-sel');});
     _closePanel();
     if (_freshToast) { _freshToast.remove(); _freshToast = null; }
+    const _dTgl2 = document.getElementById('drawerToggleBtn');
+    if (_dTgl2) _dTgl2.style.display = 'none';
+    _closeGlobalDrawer();
   }
 }
 
@@ -1244,9 +1290,10 @@ function _mkFontPicker(initialVal, onChange) {
   return wrap;
 }
 
-function _initGlobalFontPickers() {
+function _initGlobalFontPickers(idPrefix) {
+  const pre = idPrefix || 'font';
   [['Title','title'],['Body','body'],['Script','script']].forEach(([K,k]) => {
-    const container = document.getElementById('font'+K);
+    const container = document.getElementById(pre+K);
     if (!container || container.dataset.pickerInit) return;
     container.dataset.pickerInit = '1';
     const picker = _mkFontPicker(container.dataset.prefill||'', () => {
@@ -1295,8 +1342,8 @@ function applyColors(colors) {
   });
 }
 
-function _buildColorPickers(colors) {
-  const container = document.getElementById('colorPickers');
+function _buildColorPickers(containerId) {
+  const container = document.getElementById(containerId || 'colorPickers');
   if (!container) return;
   container.innerHTML = '';
   _CLR_VARS.forEach(({ label, prop, def }) => {
@@ -1407,8 +1454,8 @@ function _markActiveVersionBtn() {
   });
 }
 
-function _buildThemePicker() {
-  const picker = document.getElementById('themePicker');
+function _buildThemePicker(containerId) {
+  const picker = document.getElementById(containerId || 'themePicker');
   if (!picker) return;
   picker.innerHTML = '';
   const savedTheme = localStorage.getItem('bobaiona_theme_' + currentVersion) || VERSION_META[currentVersion].theme;
@@ -1447,8 +1494,8 @@ document.getElementById('main').addEventListener('click', (e) => {
 })();
 
 // ─── Music editor helpers ─────────────────────────────────────────────────────
-function _buildMusicSectionSelect() {
-  const sel = document.getElementById('musicSection');
+function _buildMusicSectionSelect(selEl, searchEl) {
+  const sel = selEl || document.getElementById('musicSection');
   if (!sel) return;
   sel.innerHTML = '';
   document.querySelectorAll('section.wrap').forEach((sec, i) => {
@@ -1458,7 +1505,7 @@ function _buildMusicSectionSelect() {
     opt.textContent = (i+1) + '. ' + title;
     sel.appendChild(opt);
   });
-  const container = document.getElementById('desktopMusicSearch');
+  const container = searchEl || document.getElementById('desktopMusicSearch');
   if (container) {
     _buildMusicSearch(0, container);
     sel.addEventListener('change', () => {
@@ -2502,6 +2549,55 @@ function _closeSheet(){
   const s=document.getElementById('blkSheet');
   if(s){s.classList.remove('open');s.innerHTML='';}
 }
+
+// ─── Global drawer (mobile edit menu) ────────────────────────────────────────
+let _drawerBuilt = false;
+
+function _openGlobalDrawer() {
+  const overlay = document.getElementById('globalDrawerOverlay');
+  if (overlay) { overlay.style.display = 'block'; requestAnimationFrame(() => overlay.classList.add('open')); }
+  document.getElementById('globalDrawer')?.classList.add('open');
+  if (!_drawerBuilt) {
+    _drawerBuilt = true;
+    _buildThemePicker('drwThemePicker');
+    _buildMusicSectionSelect(
+      document.getElementById('drwMusicSection'),
+      document.getElementById('drwMusicSearch')
+    );
+    // Preserve current font values before reinitializing pickers
+    const prevTitle  = _gFontPickers.title?._value  || '';
+    const prevBody   = _gFontPickers.body?._value   || '';
+    const prevScript = _gFontPickers.script?._value || '';
+    _initGlobalFontPickers('drwFont');
+    if (prevTitle)  _gFontPickers.title?._setValue(prevTitle);
+    if (prevBody)   _gFontPickers.body?._setValue(prevBody);
+    if (prevScript) _gFontPickers.script?._setValue(prevScript);
+    const drwApply = document.getElementById('drwApplyFontsBtn');
+    if (drwApply) drwApply.addEventListener('click', () => {
+      applyFonts({ title: _gFontPickers.title?._value||'', body: _gFontPickers.body?._value||'', script: _gFontPickers.script?._value||'' });
+      saveAll();
+    });
+    _buildColorPickers('drwColorPickers');
+  }
+}
+
+function _closeGlobalDrawer() {
+  const overlay = document.getElementById('globalDrawerOverlay');
+  if (overlay) {
+    overlay.classList.remove('open');
+    overlay.addEventListener('transitionend', () => { overlay.style.display = 'none'; }, { once: true });
+  }
+  document.getElementById('globalDrawer')?.classList.remove('open');
+}
+
+document.getElementById('drawerToggleBtn')?.addEventListener('click', _openGlobalDrawer);
+document.getElementById('globalDrawerOverlay')?.addEventListener('click', _closeGlobalDrawer);
+document.getElementById('drawerSaveBtn')?.addEventListener('click', saveAll);
+document.getElementById('globalDrawer')?.addEventListener('click', function(e) {
+  const hdr = e.target.closest('.ep-sec-hdr');
+  if (!hdr) return;
+  hdr.closest('.ep-sec').classList.toggle('open');
+});
 
 // keyboard shortcut: Ctrl+E to toggle editor
 window.addEventListener('keydown',(e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); toggleEditor(); } });
