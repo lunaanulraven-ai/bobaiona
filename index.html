@@ -753,16 +753,13 @@ openBtn.addEventListener('click',()=>{
   openBtn.setAttribute('aria-expanded','true');
   const main=document.getElementById('main'); if(main){ main.focus(); }
   unlockAndPlay();
-  // Load fresh content from Supabase (non-blocking)
+  // Refresh music config only — prefs (fonts/theme/colors) are already
+  // applied by initBlocks() before the page became visible. Re-applying
+  // them here caused a visible font flash mid-cover-animation.
   supaLoad('shared').then(data => {
     if (!data) return;
     if (data.music) MUSIC_CONFIG = data.music;
     try { localStorage.setItem('bobaiona_shared', JSON.stringify(data)); } catch(e) {}
-  });
-  supaLoad(currentVersion + '_prefs').then(prefs => {
-    if (!prefs) return;
-    applyPrefs(prefs); _buildThemePicker();
-    try { localStorage.setItem('bobaiona_' + currentVersion + '_prefs', JSON.stringify(prefs)); } catch(e) {}
   });
 });
 
@@ -1337,15 +1334,16 @@ function _initGlobalFontPickers(idPrefix) {
         title:  _gFontPickers.title?._value  || '',
         body:   _gFontPickers.body?._value   || '',
         script: _gFontPickers.script?._value || '',
-      });
+      }, 'fontPicker-onChange');
     });
     container.appendChild(picker);
     _gFontPickers[k] = picker;
   });
 }
 
-function applyFonts(fonts) {
+function applyFonts(fonts, _caller) {
   if (!fonts) return;
+  console.log('[bobaiona] applyFonts', _caller || '(unknown)', fonts);
   const r = document.documentElement.style;
   if (fonts.title)  { _loadGFont(fonts.title);  r.setProperty('--font-title',  "'" + fonts.title  + "',serif"); }
   if (fonts.body)   { _loadGFont(fonts.body);   r.setProperty('--font-body',   "'" + fonts.body   + "',Georgia,serif"); }
@@ -1439,7 +1437,7 @@ function _gatherColors() {
 function applyPrefs(prefs) {
   if (!prefs) return;
   if (prefs.theme)  applyTheme(prefs.theme);
-  if (prefs.fonts)  applyFonts(prefs.fonts);
+  if (prefs.fonts)  applyFonts(prefs.fonts, 'applyPrefs');
   if (prefs.colors) applyColors(prefs.colors);
 }
 
@@ -1451,7 +1449,7 @@ function applyPrefs(prefs) {
     const title  = _gFontPickers.title?._value  || '';
     const body   = _gFontPickers.body?._value   || '';
     const script = _gFontPickers.script?._value || '';
-    applyFonts({ title, body, script });
+    applyFonts({ title, body, script }, 'applyFontsBtn');
     saveAll();
   });
 })();
@@ -2000,9 +1998,13 @@ async function initBlocks(){
     }
     MUSIC_CONFIG=MUSIC_CONFIG.filter(c=>c.videoId);
     const prefs=await supaLoad(currentVersion+'_prefs');
+    console.log('[bobaiona] initBlocks prefs from supabase:', prefs);
     if(prefs){applyPrefs(prefs);_buildThemePicker();}
     if(prefs) try{localStorage.setItem('bobaiona_'+currentVersion+'_prefs',JSON.stringify(prefs));}catch(e){}
-    else{const raw=localStorage.getItem('bobaiona_'+currentVersion+'_prefs');if(raw)try{const p=JSON.parse(raw);applyPrefs(p);_buildThemePicker();}catch(e){}}
+    else{
+      const raw=localStorage.getItem('bobaiona_'+currentVersion+'_prefs');
+      if(raw)try{const p=JSON.parse(raw);console.log('[bobaiona] initBlocks prefs from localStorage:',p);applyPrefs(p);_buildThemePicker();}catch(e){}
+    }
     if(!blocks) blocks=parsePageToBlocks();
     _blocks=blocks;
     renderBlocks(_blocks);
@@ -2734,7 +2736,7 @@ function _openGlobalDrawer() {
     if (prevScript) _gFontPickers.script?._setValue(prevScript);
     const drwApply = document.getElementById('drwApplyFontsBtn');
     if (drwApply) drwApply.addEventListener('click', () => {
-      applyFonts({ title: _gFontPickers.title?._value||'', body: _gFontPickers.body?._value||'', script: _gFontPickers.script?._value||'' });
+      applyFonts({ title: _gFontPickers.title?._value||'', body: _gFontPickers.body?._value||'', script: _gFontPickers.script?._value||'' }, 'drwApplyFontsBtn');
       saveAll();
     });
     _buildColorPickers('drwColorPickers');
