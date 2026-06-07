@@ -331,6 +331,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
       <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">···</span><span class="ep-sec-title">mais</span><span class="ep-sec-arrow">▾</span></button>
       <div class="ep-sec-body" style="display:flex;flex-direction:column;gap:6px">
         <button id="resetStylesBtn" class="ep-btn-sec">↩ resetar estilos</button>
+        <button id="syncHtmlBtn" class="ep-btn-sec">🔄 sincronizar HTML estático → Supabase</button>
         <button id="exportBtn" class="ep-btn-sec">exportar JSON</button>
         <button id="loadBtn" class="ep-btn-sec">carregar salvo local</button>
         <label for="importFile" class="ep-btn-sec" style="cursor:pointer;text-align:center;margin:0">importar JSON</label>
@@ -613,6 +614,7 @@ button.ver-btn:focus-visible{outline:3px solid rgba(226,183,115,.9);outline-offs
       <button class="ep-sec-hdr" type="button"><span class="ep-sec-ico">···</span><span class="ep-sec-title">mais</span><span class="ep-sec-arrow">▾</span></button>
       <div class="ep-sec-body" style="display:flex;flex-direction:column;gap:6px">
         <button id="drwResetStylesBtn" class="ep-btn-sec">↩ resetar estilos</button>
+        <button id="drwSyncHtmlBtn" class="ep-btn-sec">🔄 sincronizar HTML estático → Supabase</button>
       </div>
     </div>
   </div>
@@ -1565,6 +1567,22 @@ function _resetAllStyles() {
 document.getElementById('resetStylesBtn')?.addEventListener('click', _resetAllStyles);
 document.getElementById('drwResetStylesBtn')?.addEventListener('click', _resetAllStyles);
 
+async function _syncStaticHtmlToSupabase() {
+  if (!confirm('Isso vai sobrescrever o conteúdo no Supabase com o HTML estático da página (incluindo capítulos novos). Continuar?')) return;
+  _showSaveToast('⏳ sincronizando...');
+  const payload = { blocks: _staticBlocks, music: MUSIC_CONFIG };
+  const ok = await supaSave('shared', payload);
+  if (ok) {
+    try { localStorage.setItem('bobaiona_shared', JSON.stringify(payload)); } catch(e) {}
+    _showSaveToast('✅ sincronizado! recarregando...');
+    setTimeout(() => location.reload(true), 1200);
+  } else {
+    _showSaveToast('⚠️ erro ao sincronizar — tente novamente');
+  }
+}
+document.getElementById('syncHtmlBtn')?.addEventListener('click', _syncStaticHtmlToSupabase);
+document.getElementById('drwSyncHtmlBtn')?.addEventListener('click', _syncStaticHtmlToSupabase);
+
 async function switchVersion(ver) {
   if (ver === currentVersion) return;
   currentVersion = ver;
@@ -2216,6 +2234,7 @@ async function initBlocks(){
     document.getElementById('main').style.opacity='1';
   }
 }
+const _staticBlocks = parsePageToBlocks();
 initBlocks();
 
 // ─── Block Editor ─────────────────────────────────────────────────────────
