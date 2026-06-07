@@ -3038,6 +3038,77 @@ document.getElementById('globalDrawer')?.addEventListener('click', function(e) {
 // keyboard shortcut: Ctrl+E to toggle editor
 window.addEventListener('keydown',(e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); toggleEditor(); } });
 
+window.addSuspenseBlock = async () => {
+  console.log("Starting suspense block injection...");
+  const data = await window.supaLoad('shared');
+  if (!data || !data.blocks) return console.error("Could not load blocks.");
+  let blocks = data.blocks;
+
+  const newBlock = {
+    "id": "chap-freestyle",
+    "data": {
+      "date": "07 de junho · agora há pouco",
+      "title": "O Freestyle e as Referências",
+      "number": "capítulo 12"
+    },
+    "type": "chapter",
+    "children": [
+      {
+        "id": "story-freestyle-intro",
+        "data": {
+          "html": "Você cismou que eu precisava de uma lista para saber do que você gosta. Mal sabe você que a única lista que me importa não tem nada a ver com o óbvio.",
+          "autor": "caze"
+        },
+        "type": "story"
+      },
+      {
+        "id": "chat-dialogo-refs",
+        "data": {
+          "head": {
+            "ava": "v",
+            "who": "Lógica vs. Referências",
+            "time": "07 de junho · 18:10"
+          },
+          "messages": [
+            { "side": "her", "text": "eu quero saber das coisas específicas q vc gosta. temas, filmes, jogos...", "time": "18:09" },
+            { "side": "him", "text": "nada de temas, filmes, jogos. programação e vc. só.", "time": "18:10" },
+            { "side": "her", "text": "ai para eh serio, eu preciso saber", "time": "18:10" },
+            { "side": "him", "text": "eh sério msm. eu gosto de referências, coisas pensadas. referências à gente.", "time": "18:11" },
+            { "side": "her", "text": "vou compra todas as skin pra vc de presente", "time": "18:11" },
+            { "side": "him", "text": "seriam algumas dezenas de milhares de reais kkkk mas eu n iria querer nada de lol. eh oq eu to falando amor.", "time": "18:12" }
+          ]
+        },
+        "type": "chat"
+      },
+      {
+        "id": "note-freestyle-hook",
+        "data": {
+          "html": "A caneta bonita que você usou esses dias... guarda ela bem guardada. Vou precisar dela logo menos. 🤫",
+          "autor": "caze"
+        },
+        "type": "note"
+      }
+    ]
+  };
+
+  const finaleIndex = blocks.findIndex(b => b.id === 'finale-56');
+  if (finaleIndex > -1) {
+    blocks.splice(finaleIndex, 0, newBlock);
+    console.log("Injected suspense block before finale.");
+  } else {
+    console.warn("Could not find finale-56 block.");
+  }
+
+  const chapDoze = blocks.find(b => b.id === 'chap-doze');
+  if (chapDoze) {
+    chapDoze.data.number = "capítulo 13";
+    console.log("Updated final chapter number to 13.");
+  }
+
+  await window.supaSave('shared', { ...data, blocks });
+  console.log("Update completed and saved to Supabase! Please refresh the page.");
+};
+
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
