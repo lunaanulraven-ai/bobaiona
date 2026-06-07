@@ -1,5 +1,5 @@
 // Atualizado automaticamente pelo pre-commit hook a cada commit
-const VERSION = '1780723642746';
+const VERSION = '1780796809545';
 
 self.addEventListener('install', () => self.skipWaiting());
 

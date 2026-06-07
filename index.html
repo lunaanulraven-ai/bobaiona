@@ -655,6 +655,7 @@ let MUSIC_CONFIG = (function() {
 let _ytPlayer = null;
 let _ytReady = false;
 let _lastSectionIdx = -1;
+let _currentPlaylistVideoId = null;
 
 function onYouTubeIframeAPIReady() {
   _ytPlayer = new YT.Player('ytPlayer', {
@@ -666,7 +667,18 @@ function onYouTubeIframeAPIReady() {
         const btn = document.getElementById('musicToggle');
         if (!btn) return;
         if (e.data === YT.PlayerState.PLAYING) btn.textContent = '⏸';
-        else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) btn.textContent = '▶';
+        else if (e.data === YT.PlayerState.PAUSED) btn.textContent = '▶';
+        else if (e.data === YT.PlayerState.ENDED) {
+          btn.textContent = '▶';
+          const pl = MUSIC_CONFIG.playlist;
+          if (pl?.length) {
+            let pick;
+            if (pl.length === 1) { pick = pl[0]; }
+            else { do { pick = pl[Math.floor(Math.random() * pl.length)]; } while (pick.videoId === _currentPlaylistVideoId); }
+            _currentPlaylistVideoId = pick.videoId;
+            _loadYTTrack(pick.videoId, pick.label || '', pick.startSeconds, pick.endSeconds);
+          }
+        }
       }
     }
   });
@@ -2072,9 +2084,10 @@ function _blockEl(b) {
   }
   else if (t==='chat') {
     el=document.createElement('div'); el.className='chat reveal';
+    const _flip = s => currentVersion==='vick' ? (s==='him'?'her':'him') : s;
     el.innerHTML=
       `<div class="head"><div class="ava">${d.head.ava}</div><div class="who">${_esc(d.head.who)}<small>${_esc(d.head.time)}</small></div></div>`+
-      d.messages.map(m=>`<div class="brow ${m.side}"><div class="bubble ${m.side}">${_esc(m.text)}<span class="time">${_esc(m.time)}</span></div></div>`).join('');
+      d.messages.map(m=>{const s=_flip(m.side);return `<div class="brow ${s}"><div class="bubble ${s}">${_esc(m.text)}<span class="time">${_esc(m.time)}</span></div></div>`;}).join('');
   }
   else if (t==='gallery') {
     el=document.createElement('div'); el.className='gallery';
