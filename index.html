@@ -1568,13 +1568,64 @@ document.getElementById('resetStylesBtn')?.addEventListener('click', _resetAllSt
 document.getElementById('drwResetStylesBtn')?.addEventListener('click', _resetAllStyles);
 
 async function _syncStaticHtmlToSupabase() {
-  if (!confirm('Isso vai sobrescrever o conteúdo no Supabase com o HTML estático da página (incluindo capítulos novos). Continuar?')) return;
-  _showSaveToast('⏳ sincronizando...');
-  const payload = { blocks: _staticBlocks, music: MUSIC_CONFIG };
+  if (!confirm('Vai comparar o HTML estático com o Supabase e adicionar apenas os capítulos que estiverem faltando. Continuar?')) return;
+  _showSaveToast('⏳ carregando dados do Supabase...');
+
+  const supaData = await supaLoad('shared');
+  const supaBlocks = supaData?.blocks ? _migrateFlat(supaData.blocks) : [];
+
+  // Index what already exists in Supabase
+  const supaChapterByTitle = new Map(
+    supaBlocks.filter(b => b.type === 'chapter').map(b => [b.data?.title?.trim(), b])
+  );
+  const hasHero   = supaBlocks.some(b => b.type === 'hero');
+  const hasFinale = supaBlocks.some(b => b.type === 'finale');
+
+  // Find blocks present in static HTML but absent from Supabase
+  const missing = _staticBlocks.filter(b => {
+    if (b.type === 'hero')    return !hasHero;
+    if (b.type === 'finale')  return !hasFinale;
+    if (b.type === 'chapter') return !supaChapterByTitle.has(b.data?.title?.trim());
+    return false;
+  });
+
+  if (!missing.length) {
+    _showSaveToast('✅ tudo já sincronizado, nada para adicionar');
+    return;
+  }
+
+  // Merge: keep all existing Supabase blocks, insert missing ones at the right position
+  const merged = [...supaBlocks];
+  for (const b of missing) {
+    if (b.type === 'hero')   { merged.unshift(b); continue; }
+    if (b.type === 'finale') { merged.push(b);    continue; }
+    // Chapter: find the nearest preceding static chapter that already exists in merged,
+    // then insert immediately after it. Fallback: before finale, or at end.
+    const staticIdx = _staticBlocks.indexOf(b);
+    let insertAfterTitle = null;
+    for (let i = staticIdx - 1; i >= 0; i--) {
+      const prev = _staticBlocks[i];
+      if (prev.type === 'chapter' && supaChapterByTitle.has(prev.data?.title?.trim())) {
+        insertAfterTitle = prev.data.title.trim();
+        break;
+      }
+    }
+    const anchorIdx = insertAfterTitle
+      ? merged.findIndex(x => x.type === 'chapter' && x.data?.title?.trim() === insertAfterTitle)
+      : -1;
+    const insertAt = anchorIdx >= 0
+      ? anchorIdx + 1
+      : Math.max(0, merged.findIndex(x => x.type === 'finale'));
+    merged.splice(insertAt < 0 ? merged.length : insertAt, 0, b);
+    supaChapterByTitle.set(b.data.title.trim(), b); // so subsequent inserts can anchor on this one
+  }
+
+  _showSaveToast(`⏳ salvando ${missing.length} bloco(s) novo(s)...`);
+  const payload = { blocks: merged, music: MUSIC_CONFIG, ...(Object.keys(customThemes).length ? { customThemes } : {}) };
   const ok = await supaSave('shared', payload);
   if (ok) {
     try { localStorage.setItem('bobaiona_shared', JSON.stringify(payload)); } catch(e) {}
-    _showSaveToast('✅ sincronizado! recarregando...');
+    _showSaveToast(`✅ ${missing.length} bloco(s) adicionado(s)! recarregando...`);
     setTimeout(() => location.reload(true), 1200);
   } else {
     _showSaveToast('⚠️ erro ao sincronizar — tente novamente');
